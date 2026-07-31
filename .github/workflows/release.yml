@@ -1,0 +1,49 @@
+name: release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write   # required for NuGet Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # MinVer needs full history + tags
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build SimpleLocalizations.slnx -c Release
+
+      - name: Test
+        run: dotnet test SimpleLocalizations.slnx -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack SimpleLocalizations.slnx -c Release --no-build -p:ContinuousIntegrationBuild=true -o artifacts/pkg
+
+      # Trusted Publishing: configure a trust policy on nuget.org for
+      # svenrog/SimpleLocalizations + release.yml, and set the NUGET_USER repo
+      # variable to the nuget.org account name.
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push packages
+        run: >
+          dotnet nuget push "artifacts/pkg/*.nupkg"
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

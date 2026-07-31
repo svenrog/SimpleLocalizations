@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Neutral (en-US) list patterns, in the shape ICU uses: a pair, a middle join, and a final join. Not a
+       vocabulary: these are formatting rules a renderer applies, not identities anything stores, so nothing
+       here is generated from or persisted. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="List_And_Two" xml:space="preserve">
+    <value>{0} and {1}</value>
+  </data>
+  <data name="List_And_Middle" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <!-- The serial (Oxford) comma, which the neutral culture takes and a culture beside it need not: the
+       reason a list cannot be string.Join(", ")-ed. -->
+  <data name="List_And_End" xml:space="preserve">
+    <value>{0}, and {1}</value>
+  </data>
+
+  <data name="List_Or_Two" xml:space="preserve">
+    <value>{0} or {1}</value>
+  </data>
+  <data name="List_Or_Middle" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="List_Or_End" xml:space="preserve">
+    <value>{0}, or {1}</value>
+  </data>
+
+  <data name="List_Separator" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="List_Truncated" xml:space="preserve">
+    <value>{0}, +{1} more</value>
+  </data>
+</root>

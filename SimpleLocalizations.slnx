@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="CHANGELOG.md" />
+    <File Path="CLAUDE.md" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/SimpleLocalizations.Tests/SimpleLocalizations.Tests.csproj" />
+  </Folder>
+  <Project Path="src/SimpleLocalizations/SimpleLocalizations.csproj" />
+  <Project Path="src/SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj" />
+</Solution>

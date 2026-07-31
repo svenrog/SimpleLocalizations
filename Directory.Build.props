@@ -1,0 +1,37 @@
+<Project>
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <LangVersion>latest</LangVersion>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Declaration comments are XmlDoc here, so a <see cref="..."/> naming a type that was renamed, deleted
+         or moved is a stale comment only this makes the compiler see. Only the *broken reference* is an
+         error — CS1591 (undocumented member) and CS1573 (an undocumented parameter beside documented ones)
+         are completeness rules, which is a style call rather than a comment that lies. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Sven-Erik Jonsson</Authors>
+    <Copyright>Copyright (c) 2026 Sven-Erik Jonsson</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/svenrog/SimpleLocalizations</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/svenrog/SimpleLocalizations</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

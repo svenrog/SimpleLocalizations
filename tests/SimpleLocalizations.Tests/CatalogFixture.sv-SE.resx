@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- An override list, not a copy: 'unchanged' is spelled the neutral way and so is absent. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="greeting" xml:space="preserve">
+    <value>Hej</value>
+  </data>
+  <data name="composed" xml:space="preserve">
+    <value>hittade {0} av {1}</value>
+  </data>
+</root>

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0 rather than a current TFM: the analyzer half has no choice (a Roslyn component runs
+         inside the compiler), and matching it here costs only the two range expressions ListFormatter would
+         otherwise use. What it buys is a localization library reachable from .NET Framework, which is where
+         a good deal of CMS work still lives. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>SimpleLocalizations</PackageId>
+    <Description>Localized text whose identity is stored: a .resx generates the typed keys its producers name, and an analyzer keeps the vocabulary closed, so a key renamed in the resource moves its callers and no call site can invent one.</Description>
+    <PackageTags>localization;resx;source-generator;analyzer;i18n</PackageTags>
+    <!-- One package, two assemblies. A consumer references this and the generator attaches itself, because
+         the targets below ship inside the package and a package's build/ is imported into every referencing
+         project — which is what keeps the analyzer half unconditional while the generator's inputs stay
+         conditioned on a resource existing. -->
+    <DevelopmentDependency>false</DevelopmentDependency>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ReferenceOutputAssembly off: the generator is packed, never referenced. OutputItemType names the item
+         the pack target below reads, so the path is resolved by the build rather than spelled out. -->
+    <ProjectReference Include="../SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="GeneratorAssembly"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build/SimpleLocalizations.targets" Pack="true" PackagePath="build/" />
+    <None Include="../../LICENSE.txt" Pack="true" PackagePath="/" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <Target Name="PackGeneratorAssembly" BeforeTargets="_GetPackageFiles" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <None Include="@(GeneratorAssembly)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+</Project>

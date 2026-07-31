@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- Test methods and fixture classes don't carry XmlDoc; keep the doc-comment warning off here. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit.v3" Version="2.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
+    <!-- The compiler, to drive the component the way a build does. Deliberately not
+         Microsoft.CodeAnalysis.Testing: the inputs here are AdditionalFiles plus editorconfig metadata, and
+         driving the compilation directly is both less machinery and a closer match to what actually runs —
+         the metadata goes through the same parser that silently drops a ';' (SL1009). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/SimpleLocalizations/SimpleLocalizations.csproj" />
+    <ProjectReference Include="../../src/SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj" />
+  </ItemGroup>
+
+</Project>

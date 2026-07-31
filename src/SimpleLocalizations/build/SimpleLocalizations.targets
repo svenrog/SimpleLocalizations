@@ -1,0 +1,49 @@
+<Project>
+
+  <!-- A vocabulary is declared once, on its resource file, and reaches three places from there: the embedded
+       resource the catalog reads at run time (the SDK's own globbing), the AdditionalFiles the generator
+       reads at build time, and the metadata telling it which class and key type to emit. Metadata carries
+       over from the source item, so the names a VocabularyResource declares are the ones the generator
+       reads. -->
+  <ItemGroup Condition="'@(VocabularyResource)' != ''">
+    <AdditionalFiles Include="@(VocabularyResource)" />
+
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyClass" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyKeyType" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyNamespace" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyDerived" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyHeadings" />
+  </ItemGroup>
+
+  <!-- A solution-wide claim rather than a per-resource one: every project authoring keys of the named type is
+       held to it, so stating it on each resource item would be one fact written many times. -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="VocabularyKeyFamilies" />
+  </ItemGroup>
+
+  <!-- SL1009 has to be checked here rather than in the generator, because by the time the generator runs the
+       evidence is gone: metadata reaches it through a generated .editorconfig, whose parser reads ';' as the
+       start of a comment and drops the rest of the line. A declaration written with MSBuild's own list
+       separator therefore arrives truncated to its first entry, generates the wrong key types, and compiles
+       clean. MSBuild still holds the whole value.
+
+       This is an MSBuild warning, not a compiler one, so `TreatWarningsAsErrors` does not reach it — a build
+       that wants it fatal sets `MSBuildTreatWarningsAsErrors`. -->
+  <Target Name="SimpleLocalizationsCheckMetadata"
+          BeforeTargets="CoreCompile"
+          Condition="'@(VocabularyResource)' != ''">
+    <Warning Code="SL1009"
+             Condition="$([System.String]::Copy('%(VocabularyResource.VocabularyKeyType)').Contains(';'))"
+             Text="VocabularyKeyType on %(VocabularyResource.Identity) contains ';', which the generator never sees: separate entries with '|'." />
+    <Warning Code="SL1009"
+             Condition="$([System.String]::Copy('%(VocabularyResource.VocabularyDerived)').Contains(';'))"
+             Text="VocabularyDerived on %(VocabularyResource.Identity) contains ';', which the generator never sees: separate entries with '|'." />
+    <Warning Code="SL1009"
+             Condition="$([System.String]::Copy('%(VocabularyResource.VocabularyHeadings)').Contains(';'))"
+             Text="VocabularyHeadings on %(VocabularyResource.Identity) contains ';', which the generator never sees: separate entries with '|'." />
+    <Warning Code="SL1009"
+             Condition="'$(VocabularyKeyFamilies)' != '' AND $([System.String]::Copy('$(VocabularyKeyFamilies)').Contains(';'))"
+             Text="VocabularyKeyFamilies contains ';', which the generator never sees: separate entries with '|'." />
+  </Target>
+
+</Project>

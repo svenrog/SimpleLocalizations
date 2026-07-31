@@ -1,0 +1,40 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # MinVer needs full history + tags
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore SimpleLocalizations.slnx
+
+      # Catches formatting/style drift that has no compiler diagnostic of its own
+      # (whitespace, etc.) and so wouldn't otherwise fail the Build step below.
+      - name: Format check
+        run: dotnet format SimpleLocalizations.slnx --verify-no-changes
+
+      - name: Build
+        run: dotnet build SimpleLocalizations.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test SimpleLocalizations.slnx -c Release --no-build
+
+      # Pack on every PR as a validation gate; artifacts are not published here.
+      - name: Pack (validation)
+        run: dotnet pack SimpleLocalizations.slnx -c Release --no-build -o artifacts/pkg

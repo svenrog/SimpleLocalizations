@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- A Roslyn component runs inside the compiler, which is why this is netstandard2.0. It ships no runtime
+         code: IncludeBuildOutput is off and the package places this assembly under analyzers/, so nothing
+         here reaches a consumer's published binary. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The release-tracking files RS2008 asks for: the rule list is data, not prose in a doc comment. -->
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PrivateAssets: an analyzer assembly loads into the compiler, which brings its own Roslyn, so flowing
+         this to a consumer would put a second copy beside it. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
