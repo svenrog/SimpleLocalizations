@@ -27,7 +27,7 @@ internal sealed class VocabularyKeyTypes
     /// Which key type each family produces. One file holds one project's whole vocabulary — the words a
     /// translator edits belong together — but the families in it are not the same kind of thing, and a key
     /// type standing in for another resolves to nothing. Stated as a default followed by the families that
-    /// differ: <c>TextKey | detail=DetailLabel | signal=SignalKey</c>.
+    /// differ: <c>LocalizationKey | detail=DetailLabel | signal=SignalKey</c>.
     /// <para>
     /// Separated by <c>|</c> rather than the <c>;</c> MSBuild reads as a list, for the reason
     /// <c>SL1009</c> exists: the metadata reaches here through a generated <c>.editorconfig</c>, where

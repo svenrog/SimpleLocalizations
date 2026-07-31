@@ -13,7 +13,7 @@
   <ItemGroup Condition="'@(VocabularyResource)' != ''">
     <VocabularyResource Update="@(VocabularyResource)">
       <VocabularyClass Condition="'%(VocabularyClass)' == ''">%(Filename)Keys</VocabularyClass>
-      <VocabularyKeyType Condition="'%(VocabularyKeyType)' == ''">SimpleLocalizations.TextKey</VocabularyKeyType>
+      <VocabularyKeyType Condition="'%(VocabularyKeyType)' == ''">SimpleLocalizations.LocalizationKey</VocabularyKeyType>
       <_VocabularyFolder>$([System.String]::Copy('%(RelativeDir)').Replace('\', '.').Replace('/', '.'))</_VocabularyFolder>
     </VocabularyResource>
     <VocabularyResource Update="@(VocabularyResource)">

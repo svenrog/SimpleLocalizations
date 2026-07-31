@@ -13,15 +13,15 @@ namespace SimpleLocalizations;
 /// </para>
 /// </summary>
 [VocabularyKey]
-public readonly record struct TextKey
+public readonly record struct LocalizationKey
 {
-    private TextKey(string key) => Key = key;
+    private LocalizationKey(string key) => Key = key;
 
     /// <summary>The key the catalog resolves.</summary>
     public string Key { get; }
 
     /// <summary>The generated declaration's constructor.</summary>
-    public static TextKey From(string key) => new(key);
+    public static LocalizationKey From(string key) => new(key);
 
     /// <inheritdoc />
     public override string ToString() => Key ?? "";

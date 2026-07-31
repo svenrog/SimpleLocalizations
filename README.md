@@ -81,7 +81,7 @@ var stored = catalog.Neutral(SecurityKeys.Cookies.Insecure.Key);   // what you p
 var shown  = catalog.Get(SecurityKeys.Cookies.Insecure.Key);       // what this reader sees
 ```
 
-One resource can produce several kinds at once — `VocabularyKeyType="MyApp.TextKey | finding=MyApp.FindingKey"`
+One resource can produce several kinds at once — `VocabularyKeyType="MyApp.LocalizationKey | finding=MyApp.FindingKey"`
 gives the `finding.*` family one type and everything else another.
 
 ## Declaring a vocabulary
@@ -95,7 +95,7 @@ defaults** — a bare `Include` is a whole declaration. Metadata carries over fr
 | `VocabularyClass` | `{FileName}Keys` | The generated static class's name. |
 | `VocabularyNamespace` | `$(RootNamespace)` + the folder | Where it lands. |
 | `VocabularyResourceName` | the same, plus the file name | What `Catalog()` resolves against; empty emits no factory. |
-| `VocabularyKeyType` | `SimpleLocalizations.TextKey` | One default type, optionally followed by `family=Type` entries. |
+| `VocabularyKeyType` | `SimpleLocalizations.LocalizationKey` | One default type, optionally followed by `family=Type` entries. |
 | `VocabularyDerived` | none | Suffixes a read edge appends to another key, so no member is generated for them. |
 
 Everything else is declared **in code, on the type it is about**, so a `typeof` cannot go stale and no name
