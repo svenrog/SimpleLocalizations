@@ -18,11 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ReferenceOutputAssembly off: the generator is packed, never referenced. OutputItemType names the item
-         the pack target below reads, so the path is resolved by the build rather than spelled out. -->
+    <!-- ReferenceOutputAssembly off: the generator is packed, never referenced. The reference is kept only
+         for build ordering — the pack target below asks the project where its output is. -->
     <ProjectReference Include="../SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj"
                       ReferenceOutputAssembly="false"
-                      OutputItemType="GeneratorAssembly"
                       PrivateAssets="all" />
   </ItemGroup>
 
@@ -32,9 +31,18 @@
     <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
-  <Target Name="PackGeneratorAssembly" BeforeTargets="_GetPackageFiles" DependsOnTargets="ResolveProjectReferences">
+  <!-- GetTargetPath rather than ResolveProjectReferences: it answers where the output is without invoking
+       Build, which is what lets a pack with NoBuild set work at all — resolving the reference the ordinary
+       way asks an already-built project to build again and fails with NETSDK1085. -->
+  <Target Name="PackGeneratorAssembly" BeforeTargets="_GetPackageFiles">
+    <MSBuild Projects="../SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_GeneratorAssembly" />
+    </MSBuild>
+
     <ItemGroup>
-      <None Include="@(GeneratorAssembly)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="@(_GeneratorAssembly)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
   </Target>
 
