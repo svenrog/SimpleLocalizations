@@ -20,11 +20,16 @@ namespace SimpleLocalizations.Generator;
 public sealed class VocabularyGenerator : IIncrementalGenerator
 {
     /// <summary>
-    /// The one spelling: at least two lowercase segments of letters, digits and hyphens, separated by dots. A
-    /// single-segment key has no family to nest under and is reported as malformed.
+    /// The one spelling: lowercase segments of letters, digits and hyphens, separated by dots.
+    /// <para>
+    /// A family is what a dot buys, not something every vocabulary owes: a flat resource authors keys with no
+    /// dot and emits members straight onto its class. A key type that claims families
+    /// (<c>[VocabularyKey(Families = …)]</c>) still requires one, because a flat key names no member of the
+    /// set — which is <c>SL1012</c>'s to say, not this rule's.
+    /// </para>
     /// </summary>
     private static readonly Regex _wellFormed = new(
-        @"^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$",
+        @"^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
         RegexOptions.None,
         TimeSpan.FromSeconds(1));
 
@@ -60,7 +65,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             className,
             VocabularyMetadata.Read(options, file, VocabularyMetadata.KeyType),
             VocabularyMetadata.Read(options, file, VocabularyMetadata.Namespace),
-            VocabularyMetadata.Read(options, file, VocabularyMetadata.Derived));
+            VocabularyMetadata.Read(options, file, VocabularyMetadata.Derived),
+            VocabularyMetadata.Read(options, file, VocabularyMetadata.ResourceName));
     }
 
     private static void Produce(SourceProductionContext production, Vocabulary vocabulary)
@@ -136,7 +142,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         production.AddSource(
             HintName(vocabulary.FileName),
             SourceText.From(
-                VocabularyEmitter.Emit(root, vocabulary.Namespace, vocabulary.ClassName, keyTypes),
+                VocabularyEmitter.Emit(
+                    root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName),
                 Encoding.UTF8));
     }
 
@@ -169,7 +176,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     private readonly struct Vocabulary : IEquatable<Vocabulary>
     {
         public Vocabulary(
-            string fileName, string resx, string className, string keyType, string @namespace, string derived)
+            string fileName, string resx, string className, string keyType, string @namespace, string derived,
+            string resourceName)
         {
             FileName = fileName;
             Resx = resx;
@@ -177,6 +185,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             KeyType = keyType;
             Namespace = @namespace;
             Derived = derived;
+            ResourceName = resourceName;
         }
 
         public string FileName { get; }
@@ -191,12 +200,16 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
         public string Derived { get; }
 
+        public string ResourceName { get; }
+
         public bool Equals(Vocabulary other) =>
             FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
-            && KeyType == other.KeyType && Namespace == other.Namespace && Derived == other.Derived;
+            && KeyType == other.KeyType && Namespace == other.Namespace && Derived == other.Derived
+            && ResourceName == other.ResourceName;
 
         public override bool Equals(object? obj) => obj is Vocabulary other && Equals(other);
 
-        public override int GetHashCode() => (FileName, Resx, ClassName, KeyType, Namespace, Derived).GetHashCode();
+        public override int GetHashCode() =>
+            (FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName).GetHashCode();
     }
 }

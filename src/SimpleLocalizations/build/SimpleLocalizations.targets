@@ -5,6 +5,24 @@
        reads at build time, and the metadata telling it which class and key type to emit. Metadata carries
        over from the source item, so the names a VocabularyResource declares are the ones the generator
        reads. -->
+  <!-- Defaults, so `<VocabularyResource Include="Strings.resx" />` on its own is a whole declaration. Each is
+       what the file already says: the class is named after it, the namespace and resource name follow the
+       same RootNamespace + folder path the SDK gives the embedded resource, and the key type is the one this
+       package ships for a project that keys a single kind of thing. Every one is overridable, and a project
+       that keys more than one kind names its own types. -->
+  <ItemGroup Condition="'@(VocabularyResource)' != ''">
+    <VocabularyResource Update="@(VocabularyResource)">
+      <VocabularyClass Condition="'%(VocabularyClass)' == ''">%(Filename)Keys</VocabularyClass>
+      <VocabularyKeyType Condition="'%(VocabularyKeyType)' == ''">SimpleLocalizations.TextKey</VocabularyKeyType>
+      <_VocabularyFolder>$([System.String]::Copy('%(RelativeDir)').Replace('\', '.').Replace('/', '.'))</_VocabularyFolder>
+    </VocabularyResource>
+    <VocabularyResource Update="@(VocabularyResource)">
+      <!-- TrimEnd: a resource at the project root contributes no folder, and `Ns.` is not a namespace. -->
+      <VocabularyNamespace Condition="'%(VocabularyNamespace)' == ''">$([System.String]::Copy('$(RootNamespace).%(_VocabularyFolder)').TrimEnd('.'))</VocabularyNamespace>
+      <VocabularyResourceName Condition="'%(VocabularyResourceName)' == ''">$(RootNamespace).%(_VocabularyFolder)%(Filename)</VocabularyResourceName>
+    </VocabularyResource>
+  </ItemGroup>
+
   <ItemGroup Condition="'@(VocabularyResource)' != ''">
     <AdditionalFiles Include="@(VocabularyResource)" />
 
@@ -12,6 +30,7 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyKeyType" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyNamespace" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyDerived" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyResourceName" />
   </ItemGroup>
 
   <!-- SL1009 has to be checked here rather than in the generator, because by the time the generator runs the

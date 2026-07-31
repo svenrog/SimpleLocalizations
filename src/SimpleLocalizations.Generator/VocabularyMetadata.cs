@@ -14,6 +14,8 @@ internal static class VocabularyMetadata
 
     public const string Derived = "build_metadata.AdditionalFiles.VocabularyDerived";
 
+    public const string ResourceName = "build_metadata.AdditionalFiles.VocabularyResourceName";
+
     /// <summary>
     /// The value of <paramref name="name"/> on <paramref name="file"/>, or empty when it carries none.
     /// </summary>

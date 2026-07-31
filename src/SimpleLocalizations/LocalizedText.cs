@@ -23,7 +23,7 @@ public readonly struct LocalizedText : IEquatable<LocalizedText>
 
     /// <summary>
     /// The only producer: <paramref name="key"/> resolved against <paramref name="catalog"/>, with
-    /// <paramref name="args"/> filled in. Reached through <see cref="StringCatalog.Say"/>.
+    /// <paramref name="args"/> filled in. Reached through <see cref="StringCatalog.Say(string, object?[])"/>.
     /// </summary>
     internal static LocalizedText From(StringCatalog catalog, string key, object?[] args) =>
         new(args.Length == 0 ? catalog.Get(key) : catalog.Format(key, args));

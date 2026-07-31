@@ -10,7 +10,8 @@ internal static class VocabularyEmitter
     /// namespace, holding a nested class per family and a key property per authored entry. Called once the tree
     /// is known to be emittable — every collision is reported before this runs.
     /// </summary>
-    public static string Emit(VocabularyNode root, string @namespace, string className, VocabularyKeyTypes keyTypes)
+    public static string Emit(
+        VocabularyNode root, string @namespace, string className, VocabularyKeyTypes keyTypes, string resourceName)
     {
         var source = new StringBuilder();
 
@@ -26,6 +27,20 @@ internal static class VocabularyEmitter
         source.AppendLine("/// </summary>");
         source.AppendLine($"public static class {className}");
         source.AppendLine("{");
+
+        if (resourceName.Length > 0)
+        {
+            // The one thing a call site would otherwise spell by hand, and the one it cannot check: a base
+            // name that does not match what the assembly embedded resolves nothing and throws on first use.
+            source.AppendLine("    /// <summary>The resource set these keys are authored in.</summary>");
+            source.AppendLine($"    public const string ResourceName = \"{resourceName}\";");
+            source.AppendLine();
+            source.AppendLine("    /// <summary>A catalog over this resource set, for <paramref name=\"cultures\"/>.</summary>");
+            source.AppendLine("    public static global::SimpleLocalizations.StringCatalog Catalog(");
+            source.AppendLine("        global::SimpleLocalizations.TextCultures cultures) =>");
+            source.AppendLine($"        cultures.Catalog(ResourceName, typeof({className}).Assembly);");
+            source.AppendLine();
+        }
 
         foreach (var child in root.Children)
         {

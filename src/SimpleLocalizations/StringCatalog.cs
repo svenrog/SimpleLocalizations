@@ -87,11 +87,23 @@ public sealed class StringCatalog
         string.Format(CultureInfo.CurrentCulture, Get(key), args);
 
     /// <summary>
-    /// <see cref="Format"/> as a <see cref="LocalizedText"/> — the same sentence, carrying the proof that it
+    /// <see cref="Format(string, object?[])"/> as a <see cref="LocalizedText"/> — the same sentence, carrying the proof that it
     /// came from here. Reached for where a surface renders straight into the reader's culture and a call site
     /// must not be able to word the sentence itself.
     /// </summary>
     public LocalizedText Say(string key, params object?[] args) => LocalizedText.From(this, key, args);
+
+    /// <summary>The text for <paramref name="key"/> in the ambient UI culture.</summary>
+    public string Get(TextKey key) => Get(key.Key);
+
+    /// <summary><see cref="Get(TextKey)"/> composed with <paramref name="args"/>.</summary>
+    public string Format(TextKey key, params object?[] args) => Format(key.Key, args);
+
+    /// <summary>The neutral rendering of <paramref name="key"/>, for text about to be stored.</summary>
+    public string Neutral(TextKey key, params string[] args) => Neutral(key.Key, args);
+
+    /// <summary><see cref="Format(TextKey, object?[])"/> as a <see cref="LocalizedText"/>.</summary>
+    public LocalizedText Say(TextKey key, params object?[] args) => Say(key.Key, args);
 
     /// <summary>
     /// The keys authored for exactly <paramref name="culture"/>, without inheriting the neutral set. A parity

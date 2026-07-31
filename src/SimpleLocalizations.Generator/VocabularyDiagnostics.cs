@@ -8,14 +8,14 @@ internal static class VocabularyDiagnostics
     private const string _category = "SimpleLocalizations";
 
     /// <summary>
-    /// One spelling for every key. A key is persisted identity — it reaches a database, a JSON report and the
-    /// dashboard — so it is lowercase and dotted wherever it is authored, and the segments are what the
+    /// One spelling for every key. A key is persisted identity — it reaches a database, a serialized payload
+    /// and whatever reads it back — so it is lowercase wherever it is authored, and the segments are what the
     /// generated members are named after.
     /// </summary>
     public static readonly DiagnosticDescriptor Malformed = new(
         "SL1001",
-        "Vocabulary key is not lowercase and dotted",
-        "'{0}' in {1} is not a lowercase dotted key (family.name, digits and hyphens allowed)",
+        "Vocabulary key is not lowercase",
+        "'{0}' in {1} is not a lowercase key (dots separate families; digits and hyphens allowed)",
         _category,
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

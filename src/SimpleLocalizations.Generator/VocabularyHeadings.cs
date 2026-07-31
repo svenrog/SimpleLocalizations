@@ -28,7 +28,17 @@ public sealed class VocabularyHeadings : DiagnosticAnalyzer
         isEnabledByDefault: true,
         customTags: WellKnownDiagnosticTags.CompilationEnd);
 
-    private static readonly ImmutableArray<DiagnosticDescriptor> _supported = ImmutableArray.Create(_rule);
+    private static readonly DiagnosticDescriptor _empty = new(
+        "SL1014",
+        "A declared family enumerates no members",
+        "'{0}' is marked [VocabularyFamily] but enumerates no members; a set is its enum members, its constants, or its static readonly instances",
+        "SimpleLocalizations",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
+
+    private static readonly ImmutableArray<DiagnosticDescriptor> _supported =
+        ImmutableArray.Create(_rule, _empty);
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => _supported;
@@ -54,14 +64,25 @@ public sealed class VocabularyHeadings : DiagnosticAnalyzer
 
         foreach (var (set, prefix) in sets)
         {
-            foreach (var member in VocabularyKeys.Constants(set))
+            var members = VocabularyKeys.Members(set).ToList();
+
+            // A set nothing can enumerate checks nothing and would say nothing, which reads exactly like a
+            // set whose every member is authored.
+            if (members.Count == 0)
             {
-                var key = prefix + "." + member.Name.ToLowerInvariant();
+                context.ReportDiagnostic(Diagnostic.Create(
+                    _empty, set.Locations.FirstOrDefault(), set.Name));
+                continue;
+            }
+
+            foreach (var (name, word, locations) in members)
+            {
+                var key = prefix + "." + word;
 
                 if (!authored.Contains(key))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
-                        _rule, member.Locations.FirstOrDefault(), member.Name, key));
+                        _rule, locations.FirstOrDefault(), name, key));
                 }
             }
         }

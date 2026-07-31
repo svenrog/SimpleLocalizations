@@ -20,62 +20,83 @@ The answer here is three rules, and the library exists to make the compiler hold
 ## Getting started
 
 ```xml
-<PackageReference Include="SimpleLocalizations" Version="0.1.0" />
+<PackageReference Include="SimpleLocalizations" Version="0.2.0" />
 ```
 
-Declare a key type — one per *kind* of thing you key, because a key of one kind standing in for another
-resolves to nothing and falls back without a word of complaint. You declare the name; the generator writes
-the body, because the shape *is* the rule — a private constructor and one factory are what keep the
-vocabulary closed, and a hand-rolled type that grew a public constructor would open it again silently:
-
-```csharp
-using SimpleLocalizations;
-
-[VocabularyKey]
-public readonly partial record struct FindingKey;
-```
-
-Author the words in a `.resx`, keyed `family.name`, lowercase and dotted:
+Point it at a `.resx`. That is the whole declaration:
 
 ```xml
-<data name="cookies.insecure" xml:space="preserve">
-  <value>Session cookie sent without Secure</value>
+<ItemGroup>
+  <VocabularyResource Include="Strings.resx" />
+</ItemGroup>
+```
+
+Author the words, keyed lowercase — a dot nests one family under another, and nothing owes you one:
+
+```xml
+<data name="greeting" xml:space="preserve">
+  <value>Hello, {0}</value>
   <comment>Becomes the generated member's XmlDoc.</comment>
 </data>
 ```
 
-Point the generator at it:
-
-```xml
-<ItemGroup>
-  <VocabularyResource Include="Localization/SecurityStrings.resx"
-                      VocabularyClass="SecurityKeys"
-                      VocabularyNamespace="MyApp.Security"
-                      VocabularyKeyType="MyApp.FindingKey" />
-</ItemGroup>
-```
-
-And name the member, never the key:
+Name the member, never the key:
 
 ```csharp
-var cultures = new TextCultures("en-US", "en-GB", "sv-SE");
-var catalog = cultures.Catalog("MyApp.Security.SecurityStrings", typeof(Thing).Assembly);
+var text = StringsKeys.Catalog(new TextCultures("en-US", "sv-SE"));
 
+text.Format(StringsKeys.Greeting, "world");   // "Hello, world", or "Hej, world" for a Swedish reader
+text.Neutral(StringsKeys.Greeting, "world");  // "Hello, world" whoever is reading — what you persist
+```
+
+`StringsKeys` is generated from `Strings.resx`; the class name, namespace, resource name and key type all
+follow the file, and every one of them is overridable. Add `Strings.sv-SE.resx` holding only the entries
+Swedish spells differently and it is picked up — a culture file is an override list, not a copy.
+
+That is the whole of the simple path. What follows is for the case it does not cover.
+
+## When text is also an identity
+
+The reason this library exists rather than `IStringLocalizer`: sometimes the text *is* a key — a verdict is
+filed against a record's title, a rule matches on it, a row in a database points at it. Then a key needs a
+**type**, so that a key of one kind cannot stand in for another and resolve to nothing.
+
+You declare the name; the generator writes the body, because the shape *is* the rule — a private constructor
+and one factory are what keep the vocabulary closed, and a hand-rolled type that grew a public constructor
+would open it again silently:
+
+```csharp
+[VocabularyKey]
+public readonly partial record struct FindingKey;
+```
+
+```xml
+<VocabularyResource Include="Localization/SecurityStrings.resx"
+                    VocabularyClass="SecurityKeys"
+                    VocabularyKeyType="MyApp.FindingKey" />
+```
+
+```csharp
 var stored = catalog.Neutral(SecurityKeys.Cookies.Insecure.Key);   // what you persist
 var shown  = catalog.Get(SecurityKeys.Cookies.Insecure.Key);       // what this reader sees
 ```
 
+One resource can produce several kinds at once — `VocabularyKeyType="MyApp.TextKey | finding=MyApp.FindingKey"`
+gives the `finding.*` family one type and everything else another.
+
 ## Declaring a vocabulary
 
-Everything but the keys themselves is metadata on the `VocabularyResource` item. Metadata carries over from
-the source item, so an `EmbeddedResource` glob and the generator read one declaration.
+Everything but the keys themselves is metadata on the `VocabularyResource` item, and **every one of them
+defaults** — a bare `Include` is a whole declaration. Metadata carries over from the source item, so an
+`EmbeddedResource` glob and the generator read one declaration.
 
-| Metadata | What it settles |
-| --- | --- |
-| `VocabularyClass` | The generated static class's name. |
-| `VocabularyNamespace` | Where it lands. |
-| `VocabularyKeyType` | One default type, optionally followed by `family=Type` entries. |
-| `VocabularyDerived` | Suffixes a read edge appends to another key, so no member is generated for them. |
+| Metadata | Default | What it settles |
+| --- | --- | --- |
+| `VocabularyClass` | `{FileName}Keys` | The generated static class's name. |
+| `VocabularyNamespace` | `$(RootNamespace)` + the folder | Where it lands. |
+| `VocabularyResourceName` | the same, plus the file name | What `Catalog()` resolves against; empty emits no factory. |
+| `VocabularyKeyType` | `SimpleLocalizations.TextKey` | One default type, optionally followed by `family=Type` entries. |
+| `VocabularyDerived` | none | Suffixes a read edge appends to another key, so no member is generated for them. |
 
 Everything else is declared **in code, on the type it is about**, so a `typeof` cannot go stale and no name
 is written twice:
@@ -88,6 +109,36 @@ public enum FindingCategories { Tls, Stack, Company }
 public readonly partial record struct FindingKey;
 ```
 
+### What counts as a member of a set
+
+`[VocabularyFamily]` reads three shapes, because a closed set is written all three ways:
+
+| Shape | Spelled by |
+| --- | --- |
+| An enum member | its name |
+| A constant | its **value** — a value is why it is a constant and not an enum, so `Https = "http-s"` needs `http-s` |
+| A `static readonly` field or property of the declaring type | its name — the type-safe enum a class reaches for when a member needs behaviour |
+
+Lowercased whichever it is. A member whose type is something else — a helper property, an unrelated
+constant — is not one of the set. `SL1014` refuses a `[VocabularyFamily]` type that enumerates none of these,
+since checking nothing looks exactly like a set whose every member is authored.
+
+### Families are optional
+
+A dot buys a family; nothing owes one. A **flat** resource — console furniture, a set of refusals, anything
+nothing groups — authors keys with no dot and emits members straight onto its class:
+
+```xml
+<data name="greeting" xml:space="preserve"><value>Hello</value></data>
+```
+
+```csharp
+catalog.Get(ConsoleKeys.Greeting.Key)
+```
+
+Flat and nested keys can share one resource. A key type that claims `Families` still needs one, because a
+flat key names no member of the set — but that is `SL1012` saying so, not a rule about key shape.
+
 > **Every list-shaped value is separated by `|`, never `;`.** The metadata reaches the generator through a
 > generated `.editorconfig`, where `;` begins a comment — so a declaration written with MSBuild's own list
 > separator arrives truncated to its first entry, generates the wrong key types, and compiles clean.
@@ -95,7 +146,10 @@ public readonly partial record struct FindingKey;
 
 ## Generated shape
 
-`cookies.insecure` becomes `SecurityKeys.Cookies.Insecure`. Each family also carries a
+`cookies.insecure` becomes `SecurityKeys.Cookies.Insecure`. The class carries a `ResourceName` and a
+`Catalog(TextCultures)`, so the resource's base name is never spelled at a call site — the one string a
+consumer would otherwise have to get right and could not check, since a wrong one resolves nothing and throws
+on first use. Each family also carries a
 `Prefix` and a `Covers(key)`, so matching a family is a member rather than a hand-written constant and a
 `StartsWith` at the call site. A resx `<comment>` becomes the member's XmlDoc.
 
@@ -113,7 +167,7 @@ a customer.
 
 | Id | What it refuses |
 | --- | --- |
-| `SL1001` | A key that is not two or more lowercase dotted segments of letters, digits and hyphens. |
+| `SL1001` | A key that is not lowercase segments of letters, digits and hyphens, separated by dots. |
 | `SL1002` | A key that is a proper prefix of another — the segment is the family others nest under. |
 | `SL1003` | A resource marked as a vocabulary with no `VocabularyKeyType`. |
 | `SL1004` | A resource the generator cannot read: unparseable, or a root that is not a resx `<root>`. |
@@ -126,6 +180,7 @@ a customer.
 | `SL1011` | A member of a declared set with no key authored for it. |
 | `SL1012` | A key of the declared type whose family names no member of the declared set. |
 | `SL1013` | A `[VocabularyKey]` type that is not `partial`, so its body cannot be written. |
+| `SL1014` | A `[VocabularyFamily]` type that enumerates no members, so it checks nothing. |
 
 **They ship as warnings.** Escalate them in the projects that want them fatal — `TreatWarningsAsErrors`, or
 `<WarningsAsErrors>SL1001;SL1002;…</WarningsAsErrors>` for the set. Two caveats worth knowing:

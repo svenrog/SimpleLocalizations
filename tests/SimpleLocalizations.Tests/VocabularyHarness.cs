@@ -20,7 +20,8 @@ internal static class VocabularyHarness
         string Class,
         string KeyType,
         string Namespace,
-        string Derived = "");
+        string Derived = "",
+        string ResourceName = "");
 
     /// <summary>What one run produced: every diagnostic, and every file the generator emitted.</summary>
     internal sealed record Run(
@@ -197,6 +198,7 @@ internal static class VocabularyHarness
                 ["build_metadata.AdditionalFiles.VocabularyKeyType"] = declaration.KeyType,
                 ["build_metadata.AdditionalFiles.VocabularyNamespace"] = declaration.Namespace,
                 ["build_metadata.AdditionalFiles.VocabularyDerived"] = declaration.Derived,
+                ["build_metadata.AdditionalFiles.VocabularyResourceName"] = declaration.ResourceName,
             });
         }
 

@@ -77,8 +77,7 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
                 var dot = entry.Key.IndexOf('.');
                 var family = dot < 0 ? entry.Key : entry.Key.Substring(0, dot);
 
-                if (!VocabularyKeys.Constants(families)
-                    .Any(member => member.Name.ToLowerInvariant() == family))
+                if (!VocabularyKeys.Members(families).Any(member => member.Word == family))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         _rule,
