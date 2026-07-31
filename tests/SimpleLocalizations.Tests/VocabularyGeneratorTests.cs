@@ -9,8 +9,8 @@ namespace SimpleLocalizations.Tests;
 /// </summary>
 public class VocabularyGeneratorTests
 {
-    private static Declaration Declared(string keyType = "Probe.ProbeKey", string derived = "", string headings = "") =>
-        new("ProbeKeys", keyType, "Probe", derived, headings);
+    private static Declaration Declared(string keyType = "Probe.ProbeKey", string derived = "") =>
+        new("ProbeKeys", keyType, "Probe", derived);
 
     [Fact]
     public void Emits_a_member_per_key_under_a_class_per_family()

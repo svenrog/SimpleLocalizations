@@ -20,8 +20,7 @@ internal static class VocabularyHarness
         string Class,
         string KeyType,
         string Namespace,
-        string Derived = "",
-        string Headings = "");
+        string Derived = "");
 
     /// <summary>What one run produced: every diagnostic, and every file the generator emitted.</summary>
     internal sealed record Run(
@@ -40,14 +39,13 @@ internal static class VocabularyHarness
     /// <summary>Runs the generator over several resources, which is how a real project declares more than one.</summary>
     public static Run Generate(
         IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources,
-        string source = "",
-        string keyFamilies = "")
+        string source = "")
     {
         var compilation = Compile(source);
         var files = Files(resources);
 
         var driver = CSharpGeneratorDriver
-            .Create([new VocabularyGenerator().AsSourceGenerator()], files.Texts, optionsProvider: files.Options(keyFamilies))
+            .Create([new VocabularyGenerator().AsSourceGenerator()], files.Texts, optionsProvider: files.Options)
             .RunGeneratorsAndUpdateCompilation(compilation, out var updated, out var diagnostics);
 
         var sources = driver.GetRunResult().Results
@@ -58,25 +56,41 @@ internal static class VocabularyHarness
         return new Run(diagnostics, sources);
     }
 
+    /// <summary>Runs the key-type generator over <paramref name="source"/>.</summary>
+    public static Run GenerateKeyTypes(string source)
+    {
+        var driver = CSharpGeneratorDriver
+            .Create([new KeyTypeGenerator().AsSourceGenerator()])
+            .RunGeneratorsAndUpdateCompilation(Compile(source), out _, out var diagnostics);
+
+        return new Run(
+            diagnostics,
+            driver.GetRunResult().Results
+                .SelectMany(result => result.GeneratedSources)
+                .ToDictionary(generated => generated.HintName, generated => generated.SourceText.ToString()));
+    }
+
     /// <summary>Runs an analyzer over a compilation, with the resources and declaration a build would supply.</summary>
     public static ImmutableArray<Diagnostic> Analyze(
         DiagnosticAnalyzer analyzer,
         string source,
-        IReadOnlyList<(string FileName, string Resx, Declaration Declaration)>? resources = null,
-        string keyFamilies = "")
+        IReadOnlyList<(string FileName, string Resx, Declaration Declaration)>? resources = null)
     {
         var files = Files(resources ?? []);
 
         return Compile(source)
             .WithAnalyzers(
                 [analyzer],
-                new AnalyzerOptions(files.Texts, files.Options(keyFamilies)))
+                new AnalyzerOptions(files.Texts, files.Options))
             .GetAnalyzerDiagnosticsAsync()
             .GetAwaiter()
             .GetResult();
     }
 
-    /// <summary>The key type a vocabulary under test produces, declared the way a consumer declares its own.</summary>
+    /// <summary>
+    /// Key types as the generator writes them. Spelled out rather than generated, because an analyzer test
+    /// runs one analyzer over one compilation and nothing has written the bodies.
+    /// </summary>
     public const string KeyTypes = """
         using SimpleLocalizations;
 
@@ -141,7 +155,7 @@ internal static class VocabularyHarness
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
 
-    private static (ImmutableArray<AdditionalText> Texts, Func<string, AnalyzerConfigOptionsProvider> Options) Files(
+    private static (ImmutableArray<AdditionalText> Texts, AnalyzerConfigOptionsProvider Options) Files(
         IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources)
     {
         var texts = resources
@@ -152,7 +166,7 @@ internal static class VocabularyHarness
             .Select((text, index) => (text, resources[index].Declaration))
             .ToDictionary(pair => pair.text, pair => pair.Declaration);
 
-        return (texts, keyFamilies => new Options(declared, keyFamilies));
+        return (texts, new Options(declared));
     }
 
     private sealed class Text(string path, string content) : AdditionalText
@@ -164,15 +178,9 @@ internal static class VocabularyHarness
     }
 
     private sealed class Options(
-        IReadOnlyDictionary<AdditionalText, Declaration> declared, string keyFamilies) : AnalyzerConfigOptionsProvider
+        IReadOnlyDictionary<AdditionalText, Declaration> declared) : AnalyzerConfigOptionsProvider
     {
-        public override AnalyzerConfigOptions GlobalOptions { get; } = new Config(
-            keyFamilies.Length == 0
-                ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["build_property.VocabularyKeyFamilies"] = keyFamilies,
-                });
+        public override AnalyzerConfigOptions GlobalOptions { get; } = Config.Empty;
 
         public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => Config.Empty;
 
@@ -189,7 +197,6 @@ internal static class VocabularyHarness
                 ["build_metadata.AdditionalFiles.VocabularyKeyType"] = declaration.KeyType,
                 ["build_metadata.AdditionalFiles.VocabularyNamespace"] = declaration.Namespace,
                 ["build_metadata.AdditionalFiles.VocabularyDerived"] = declaration.Derived,
-                ["build_metadata.AdditionalFiles.VocabularyHeadings"] = declaration.Headings,
             });
         }
 

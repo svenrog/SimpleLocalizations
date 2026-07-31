@@ -99,4 +99,16 @@ internal static class VocabularyDiagnostics
         _category,
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    /// <summary>
+    /// A key type whose body cannot be written. Reported rather than left to the compiler, whose complaint
+    /// would be a missing <c>From</c> at every call site instead of the one word that is absent.
+    /// </summary>
+    public static readonly DiagnosticDescriptor NotPartial = new(
+        "SL1013",
+        "A vocabulary key type is not partial",
+        "'{0}' is marked [VocabularyKey] but is not partial; the generator writes its constructor, Key and From",
+        _category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

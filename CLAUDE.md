@@ -19,6 +19,18 @@ installation. Its two item groups are the split that matters: the generator's in
 therefore unconditional — a project authoring no resource is exactly where an invented key would otherwise
 compile.
 
+## Where a declaration lives
+
+A claim about a **resource** is item metadata (`VocabularyClass`, `VocabularyNamespace`, `VocabularyKeyType`,
+`VocabularyDerived`). A claim about a **type** is an attribute on that type — `[VocabularyFamily(prefix)]` for
+a set whose members need keys, `[VocabularyKey(Families = typeof(…))]` for what a key is filed under. The
+split is the point: the build knows which file authors what, and only the code knows what a type claims. A
+`typeof` also cannot go stale, cannot be written twice, and cannot be eaten by the `;` below.
+
+The key type's body is generated too, from `[VocabularyKey]` on an empty `partial` struct. The shape is the
+rule — a private constructor and one public factory — so a hand-rolled type that grew a public constructor
+would open the vocabulary again with nothing failing.
+
 ## The one non-obvious constraint
 
 **Every list-shaped declaration is separated by `|`, never `;`.** Metadata reaches the generator through a
@@ -33,7 +45,7 @@ too.
 
 ## Diagnostics
 
-Ids `SL1001`–`SL1012`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
+Ids `SL1001`–`SL1013`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
 through its own strictness. The set and what each refuses is the table in `README.md`, which is the one
 statement of it; `AnalyzerReleases.Unshipped.md` is the tracked form `RS2008` requires.
 

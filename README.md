@@ -24,24 +24,21 @@ The answer here is three rules, and the library exists to make the compiler hold
 ```
 
 Declare a key type — one per *kind* of thing you key, because a key of one kind standing in for another
-resolves to nothing and falls back without a word of complaint:
+resolves to nothing and falls back without a word of complaint. You declare the name; the generator writes
+the body, because the shape *is* the rule — a private constructor and one factory are what keep the
+vocabulary closed, and a hand-rolled type that grew a public constructor would open it again silently:
 
 ```csharp
 using SimpleLocalizations;
 
 [VocabularyKey]
-public readonly record struct FindingKey
-{
-    private FindingKey(string key) => Key = key;
-    public string Key { get; }
-    public static FindingKey From(string key) => new(key);   // only the generated declaration may call this
-}
+public readonly partial record struct FindingKey;
 ```
 
 Author the words in a `.resx`, keyed `family.name`, lowercase and dotted:
 
 ```xml
-<data name="security.cookies.insecure" xml:space="preserve">
+<data name="cookies.insecure" xml:space="preserve">
   <value>Session cookie sent without Secure</value>
   <comment>Becomes the generated member's XmlDoc.</comment>
 </data>
@@ -64,8 +61,8 @@ And name the member, never the key:
 var cultures = new TextCultures("en-US", "en-GB", "sv-SE");
 var catalog = cultures.Catalog("MyApp.Security.SecurityStrings", typeof(Thing).Assembly);
 
-var stored = catalog.Neutral(SecurityKeys.Security.Cookies.Insecure.Key);   // what you persist
-var shown  = catalog.Get(SecurityKeys.Security.Cookies.Insecure.Key);       // what this reader sees
+var stored = catalog.Neutral(SecurityKeys.Cookies.Insecure.Key);   // what you persist
+var shown  = catalog.Get(SecurityKeys.Cookies.Insecure.Key);       // what this reader sees
 ```
 
 ## Declaring a vocabulary
@@ -79,14 +76,17 @@ the source item, so an `EmbeddedResource` glob and the generator read one declar
 | `VocabularyNamespace` | Where it lands. |
 | `VocabularyKeyType` | One default type, optionally followed by `family=Type` entries. |
 | `VocabularyDerived` | Suffixes a read edge appends to another key, so no member is generated for them. |
-| `VocabularyHeadings` | `family=Type` pairs whose members must each have a key authored (`SL1011`). |
 
-Plus one MSBuild property, because it is a claim about a key *type* and every project authoring one is held
-to it:
+Everything else is declared **in code, on the type it is about**, so a `typeof` cannot go stale and no name
+is written twice:
 
-| Property | What it settles |
-| --- | --- |
-| `VocabularyKeyFamilies` | `KeyType=MembersType` pairs: a key of that type must be filed under a member (`SL1012`). |
+```csharp
+[VocabularyFamily("category")]                 // every member needs a `category.{member}` key — SL1011
+public enum FindingCategories { Tls, Stack, Company }
+
+[VocabularyKey(Families = typeof(FindingCategories))]   // a key of this type is filed under one — SL1012
+public readonly partial record struct FindingKey;
+```
 
 > **Every list-shaped value is separated by `|`, never `;`.** The metadata reaches the generator through a
 > generated `.editorconfig`, where `;` begins a comment — so a declaration written with MSBuild's own list
@@ -95,7 +95,7 @@ to it:
 
 ## Generated shape
 
-`security.cookies.insecure` becomes `SecurityKeys.Security.Cookies.Insecure`. Each family also carries a
+`cookies.insecure` becomes `SecurityKeys.Cookies.Insecure`. Each family also carries a
 `Prefix` and a `Covers(key)`, so matching a family is a member rather than a hand-written constant and a
 `StartsWith` at the call site. A resx `<comment>` becomes the member's XmlDoc.
 
@@ -125,6 +125,7 @@ a customer.
 | `SL1010` | A `From` factory reached anywhere but its generated declaration. |
 | `SL1011` | A member of a declared set with no key authored for it. |
 | `SL1012` | A key of the declared type whose family names no member of the declared set. |
+| `SL1013` | A `[VocabularyKey]` type that is not `partial`, so its body cannot be written. |
 
 **They ship as warnings.** Escalate them in the projects that want them fatal — `TreatWarningsAsErrors`, or
 `<WarningsAsErrors>SL1001;SL1002;…</WarningsAsErrors>` for the set. Two caveats worth knowing:

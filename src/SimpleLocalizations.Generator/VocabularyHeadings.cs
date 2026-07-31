@@ -5,22 +5,24 @@ using System.Collections.Immutable;
 namespace SimpleLocalizations.Generator;
 
 /// <summary>
-/// Keeps every member of a declared set's heading authored. Where a read edge composes a key from a member's
-/// own name — <c>category.{member}</c> for the heading a group renders under — no producer ever names that
-/// key, so nothing notices one missing: the lookup falls back to echoing the word it was handed, and the
-/// member renders as its own slug in every culture.
+/// Keeps every member of a <c>[VocabularyFamily]</c> set's key authored. Where a read edge composes a key
+/// from a member's own name — <c>category.{member}</c> for the heading a group renders under — no producer
+/// ever names that key, so nothing notices one missing: the lookup falls back to echoing the word it was
+/// handed, and the member renders as its own slug in every culture.
 /// <para>
-/// Declared per resource, because the headings live in exactly one file:
-/// <c>VocabularyHeadings="category=My.Namespace.Categories"</c>, pairs separated by <c>|</c>.
+/// Runs only where the set is declared, which is where the words for it belong. Everywhere else there is
+/// nothing to check and the same report would arrive once per referencing project.
 /// </para>
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class VocabularyHeadings : DiagnosticAnalyzer
 {
+    private const string _marker = "SimpleLocalizations.VocabularyFamilyAttribute";
+
     private static readonly DiagnosticDescriptor _rule = new(
         "SL1011",
         "A declared family member has no key authored",
-        "'{0}' authors no '{1}' entry in {2}; add it, or the member renders as its own name",
+        "'{0}' authors no '{1}' entry in this project's vocabularies; add it, or the member renders as its own name",
         "SimpleLocalizations",
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -42,56 +44,51 @@ public sealed class VocabularyHeadings : DiagnosticAnalyzer
 
     private static void Inspect(CompilationAnalysisContext context)
     {
-        var options = context.Options.AnalyzerConfigOptionsProvider;
-
-        foreach (var file in context.Options.AdditionalFiles)
+        var sets = Declared(context.Compilation);
+        if (sets.Count == 0)
         {
-            if (!VocabularyMetadata.IsVocabulary(options, file))
-            {
-                continue;
-            }
+            return;
+        }
 
-            var declared = VocabularyMetadata.Read(options, file, VocabularyMetadata.Headings);
-            if (declared.Length == 0)
-            {
-                continue;
-            }
+        var authored = VocabularyKeys.Authored(context.Options, context.CancellationToken);
 
-            var authored = Authored(file, context.CancellationToken);
-
-            foreach (var pair in PairList.Read(declared))
+        foreach (var (set, prefix) in sets)
+        {
+            foreach (var member in VocabularyKeys.Constants(set))
             {
-                // Silent when the type is not on this compilation: the resource may be built somewhere the
-                // set it heads is not referenced, and a rule cannot check what it cannot see.
-                if (context.Compilation.GetTypeByMetadataName(pair.Value) is not { } members)
+                var key = prefix + "." + member.Name.ToLowerInvariant();
+
+                if (!authored.Contains(key))
                 {
-                    continue;
-                }
-
-                foreach (var member in VocabularyMetadata.Constants(members))
-                {
-                    var key = pair.Key + "." + member.Name.ToLowerInvariant();
-
-                    if (!authored.Contains(key))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(
-                            _rule,
-                            member.Locations.FirstOrDefault(),
-                            member.Name,
-                            key,
-                            Path.GetFileName(file.Path)));
-                    }
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        _rule, member.Locations.FirstOrDefault(), member.Name, key));
                 }
             }
         }
     }
 
     /// <summary>
-    /// The keys the resource authors. Read off the resource rather than the generated members, since a family
-    /// a read edge composes at run time is exactly what this rule is about.
+    /// The sets this compilation declares, with the family each authors under. Declared here rather than
+    /// referenced from elsewhere: a set's members and the words for them move together or not at all.
     /// </summary>
-    private static ImmutableHashSet<string> Authored(AdditionalText file, CancellationToken token) =>
-        (VocabularyReader.Read(file.GetText(token)?.ToString() ?? "") ?? [])
-            .Select(entry => entry.Key)
-            .ToImmutableHashSet(StringComparer.Ordinal);
+    private static List<(INamedTypeSymbol Set, string Prefix)> Declared(Compilation compilation)
+    {
+        var found = new List<(INamedTypeSymbol, string)>();
+
+        foreach (var type in VocabularyKeys.DeclaredTypes(compilation))
+        {
+            foreach (var attribute in type.GetAttributes())
+            {
+                if (attribute.AttributeClass?.ToDisplayString() == _marker
+                    && attribute.ConstructorArguments.Length == 1
+                    && attribute.ConstructorArguments[0].Value is string prefix
+                    && prefix.Length > 0)
+                {
+                    found.Add((type, prefix));
+                }
+            }
+        }
+
+        return found;
+    }
 }

@@ -14,10 +14,6 @@ internal static class VocabularyMetadata
 
     public const string Derived = "build_metadata.AdditionalFiles.VocabularyDerived";
 
-    public const string Headings = "build_metadata.AdditionalFiles.VocabularyHeadings";
-
-    public const string KeyFamilies = "build_property.VocabularyKeyFamilies";
-
     /// <summary>
     /// The value of <paramref name="name"/> on <paramref name="file"/>, or empty when it carries none.
     /// </summary>
@@ -30,12 +26,4 @@ internal static class VocabularyMetadata
     /// </summary>
     public static bool IsVocabulary(AnalyzerConfigOptionsProvider options, AdditionalText file) =>
         !string.IsNullOrWhiteSpace(Read(options, file, Class));
-
-    /// <summary>
-    /// The lowercased names of every constant member of <paramref name="type"/> — the words a family's
-    /// members are spelled with. Constants rather than enum members alone, so a set declared as
-    /// <c>const string</c> holders is read the same way.
-    /// </summary>
-    public static IEnumerable<IFieldSymbol> Constants(INamedTypeSymbol type) =>
-        type.GetMembers().OfType<IFieldSymbol>().Where(field => field.HasConstantValue);
 }

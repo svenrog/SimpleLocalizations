@@ -9,15 +9,17 @@ namespace SimpleLocalizations.Generator;
 /// no grouping of its own, a key authored outside the declared set names a grouping nothing can produce — and
 /// the producer has nothing to correct it with.
 /// <para>
-/// Declared once for the whole build rather than per resource, because it is a claim about a key
-/// <em>type</em> and every project authoring one is held to it:
-/// <c>&lt;VocabularyKeyFamilies&gt;My.KeyType=My.Categories&lt;/VocabularyKeyFamilies&gt;</c>, pairs
-/// separated by <c>|</c>. Only keys of the named type are held to it — a key of another type files nothing.
+/// The claim is <c>[VocabularyKey(Families = typeof(…))]</c> on the key type, so it is stated where the type
+/// is and cannot go stale: only keys of that type are held to it, and a key of another type files nothing.
 /// </para>
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
 {
+    private const string _marker = "SimpleLocalizations.VocabularyKeyAttribute";
+
+    private const string _families = "Families";
+
     private static readonly DiagnosticDescriptor _rule = new(
         "SL1012",
         "A key is authored outside the declared families",
@@ -45,31 +47,6 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
     {
         var options = context.Options.AnalyzerConfigOptionsProvider;
 
-        if (!options.GlobalOptions.TryGetValue(VocabularyMetadata.KeyFamilies, out var declared)
-            || string.IsNullOrWhiteSpace(declared))
-        {
-            return;
-        }
-
-        var byKeyType = new Dictionary<string, ImmutableHashSet<string>>(StringComparer.Ordinal);
-
-        foreach (var pair in PairList.Read(declared))
-        {
-            // Silent when the set is not on this compilation, for the reason SL1011 states: a project may
-            // author keys of the type without referencing the assembly the families are declared in.
-            if (context.Compilation.GetTypeByMetadataName(pair.Value) is { } members)
-            {
-                byKeyType[pair.Key] = VocabularyMetadata.Constants(members)
-                    .Select(member => member.Name.ToLowerInvariant())
-                    .ToImmutableHashSet(StringComparer.Ordinal);
-            }
-        }
-
-        if (byKeyType.Count == 0)
-        {
-            return;
-        }
-
         foreach (var file in context.Options.AdditionalFiles)
         {
             if (!VocabularyMetadata.IsVocabulary(options, file))
@@ -90,7 +67,9 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
             {
                 var keyType = keyTypes.For(entry.Key);
 
-                if (!byKeyType.TryGetValue(keyType, out var families))
+                // Silent when the type is not on this compilation, or claims no families: a project may
+                // author keys of a type it cannot see the declaration of.
+                if (Families(context.Compilation, keyType) is not { } families)
                 {
                     continue;
                 }
@@ -98,7 +77,8 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
                 var dot = entry.Key.IndexOf('.');
                 var family = dot < 0 ? entry.Key : entry.Key.Substring(0, dot);
 
-                if (!families.Contains(family))
+                if (!VocabularyKeys.Constants(families)
+                    .Any(member => member.Name.ToLowerInvariant() == family))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         _rule,
@@ -107,9 +87,36 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
                         Path.GetFileName(file.Path),
                         keyType,
                         family,
-                        PairList.Read(declared).First(pair => pair.Key == keyType).Value));
+                        families.ToDisplayString()));
                 }
             }
         }
+    }
+
+    /// <summary>The set <paramref name="keyType"/> claims its keys are filed under, if it claims one.</summary>
+    private static INamedTypeSymbol? Families(Compilation compilation, string keyType)
+    {
+        if (compilation.GetTypeByMetadataName(keyType) is not { } symbol)
+        {
+            return null;
+        }
+
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() != _marker)
+            {
+                continue;
+            }
+
+            foreach (var named in attribute.NamedArguments)
+            {
+                if (named.Key == _families && named.Value.Value is INamedTypeSymbol families)
+                {
+                    return families;
+                }
+            }
+        }
+
+        return null;
     }
 }

@@ -12,13 +12,6 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyKeyType" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyNamespace" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyDerived" />
-    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyHeadings" />
-  </ItemGroup>
-
-  <!-- A solution-wide claim rather than a per-resource one: every project authoring keys of the named type is
-       held to it, so stating it on each resource item would be one fact written many times. -->
-  <ItemGroup>
-    <CompilerVisibleProperty Include="VocabularyKeyFamilies" />
   </ItemGroup>
 
   <!-- SL1009 has to be checked here rather than in the generator, because by the time the generator runs the
@@ -38,12 +31,6 @@
     <Warning Code="SL1009"
              Condition="$([System.String]::Copy('%(VocabularyResource.VocabularyDerived)').Contains(';'))"
              Text="VocabularyDerived on %(VocabularyResource.Identity) contains ';', which the generator never sees: separate entries with '|'." />
-    <Warning Code="SL1009"
-             Condition="$([System.String]::Copy('%(VocabularyResource.VocabularyHeadings)').Contains(';'))"
-             Text="VocabularyHeadings on %(VocabularyResource.Identity) contains ';', which the generator never sees: separate entries with '|'." />
-    <Warning Code="SL1009"
-             Condition="'$(VocabularyKeyFamilies)' != '' AND $([System.String]::Copy('$(VocabularyKeyFamilies)').Contains(';'))"
-             Text="VocabularyKeyFamilies contains ';', which the generator never sees: separate entries with '|'." />
   </Target>
 
 </Project>
