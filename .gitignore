@@ -361,5 +361,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-# The extraction plan: working notes, kept locally. The README carries what survives.
-PLAN.md
