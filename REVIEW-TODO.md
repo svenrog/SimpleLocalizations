@@ -60,7 +60,7 @@ harness before it was written down.
 
 ## Build
 
-- [ ] **13. `ContinuousIntegrationBuild` is set on a `--no-build` pack** — it is a compile-time property, so
+- [x] **13. `ContinuousIntegrationBuild` is set on a `--no-build` pack** — it is a compile-time property, so
       it reaches nothing. Fix: set it on the build step.
 
 ## Performance

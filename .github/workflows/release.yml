@@ -23,8 +23,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # ContinuousIntegrationBuild belongs here rather than on the pack below: it is a compile-time property
+      # — deterministic source paths, which is what makes SourceLink resolve — so setting it on a pack that
+      # runs with --no-build reaches an assembly that was already compiled without it.
       - name: Build
-        run: dotnet build SimpleLocalizations.slnx -c Release
+        run: dotnet build SimpleLocalizations.slnx -c Release -p:ContinuousIntegrationBuild=true
 
       - name: Test
         run: dotnet test SimpleLocalizations.slnx -c Release --no-build
