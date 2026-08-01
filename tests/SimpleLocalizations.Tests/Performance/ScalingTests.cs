@@ -24,6 +24,13 @@ public class ScalingTests
     /// <summary>Comfortably above linear, comfortably below quadratic.</summary>
     private const double _linearEnough = 6.0;
 
+    /// <summary>
+    /// Above what a rule reading its set once costs over four hundred keys, and below what reading it per key
+    /// costs — which is the whole job of the figure, and is checked by breaking the caching on purpose rather
+    /// than assumed. Room enough that a framework moving underneath it is not a failure, and no more.
+    /// </summary>
+    private const long _onePass = 900_000;
+
     private static Declaration Declared(string keyType = "SimpleLocalizations.LocalizationKey") =>
         new("ProbeKeys", keyType, "Probe");
 
@@ -51,7 +58,7 @@ public class ScalingTests
         // The regression this exists for: SL1012 resolved the key type's symbol and enumerated the whole
         // declared set once per authored key. Held to a figure rather than a ratio because doing that is
         // still linear in keys — it was four times steeper at four hundred keys and produced the same ratio.
-        Under(1_200_000, "SL1012 over 400 keys", () =>
+        Under(_onePass,"SL1012 over 400 keys", () =>
             AnalyzeOn(_compilation, new VocabularyKeyFamilies(),
                 [("Vocab.resx", Vocabulary(400), Declared("Probe.FiledKey"))]));
     }
@@ -59,7 +66,7 @@ public class ScalingTests
     [Fact]
     public void The_heading_rule_reads_the_vocabulary_once()
     {
-        Under(1_200_000, "SL1011 over 400 keys", () =>
+        Under(_onePass,"SL1011 over 400 keys", () =>
             AnalyzeOn(_compilation, new VocabularyHeadings(),
                 [("Vocab.resx", Vocabulary(400), Declared())]));
     }
