@@ -28,6 +28,13 @@ internal sealed class VocabularyNode
     /// <summary>The authored key, when this node is a leaf.</summary>
     public VocabularyEntry? Entry { get; private set; }
 
+    /// <summary>
+    /// The first entry at or below this node. A branch authors no key of its own, so a diagnostic about one
+    /// points at the first key it holds — the nearest thing in the file to the family being complained about.
+    /// </summary>
+    public VocabularyEntry? FirstEntry =>
+        Entry ?? _children.Values.Select(child => child.FirstEntry).FirstOrDefault(entry => entry is not null);
+
     /// <summary>The nodes filed under this one, ordered by segment so the emitted source is stable.</summary>
     public IReadOnlyCollection<VocabularyNode> Children => _children.Values;
 

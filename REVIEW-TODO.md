@@ -39,7 +39,7 @@ harness before it was written down.
       and zero sources, so every *valid* key's call sites fail with `CS0117` naming no resource file. That is
       the cascade `SL1004` and `SL1005` exist to avoid. Fix: skip the entry, emit the rest.
 
-- [ ] **8. Every diagnostic is `Location.None`** — a resx diagnostic names its key but no position, so it
+- [x] **8. Every diagnostic is `Location.None`** — a resx diagnostic names its key but no position, so it
       cannot be navigated to or suppressed. Fix: locate into the `AdditionalText`.
 
 - [ ] **9. Drop `ILocalizedTextSource`** — no implementations, consumers or tests. Decision: remove it.

@@ -22,7 +22,11 @@ internal static class VocabularyCollisions
     /// </summary>
     /// <returns>Whether any key was dropped, which is whether anything was reported.</returns>
     internal static bool Prune(
-        VocabularyNode node, string enclosing, string fileName, Action<Diagnostic> report)
+        VocabularyNode node,
+        string enclosing,
+        string fileName,
+        Func<VocabularyEntry?, Location> at,
+        Action<Diagnostic> report)
     {
         var taken = new Dictionary<string, string>(StringComparer.Ordinal);
         var dropped = new List<VocabularyNode>();
@@ -35,7 +39,7 @@ internal static class VocabularyCollisions
             if (name == enclosing)
             {
                 report(Diagnostic.Create(
-                    VocabularyDiagnostics.Shadows, Location.None, child.Path, fileName, name));
+                    VocabularyDiagnostics.Shadows, at(child.FirstEntry), child.Path, fileName, name));
                 dropped.Add(child);
                 found = true;
                 continue;
@@ -44,13 +48,13 @@ internal static class VocabularyCollisions
             if (taken.TryGetValue(name, out var first))
             {
                 report(Diagnostic.Create(
-                    VocabularyDiagnostics.Collides, Location.None, child.Path, fileName, name, first));
+                    VocabularyDiagnostics.Collides, at(child.FirstEntry), child.Path, fileName, name, first));
                 dropped.Add(child);
                 continue;
             }
 
             taken.Add(name, child.Path);
-            found |= Prune(child, name, fileName, report);
+            found |= Prune(child, name, fileName, at, report);
         }
 
         // After the walk: Children is the live collection the walk reads.

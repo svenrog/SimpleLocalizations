@@ -62,8 +62,9 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
                 continue;
             }
 
-            foreach (var entry in VocabularyReader.Read(file.GetText(context.CancellationToken)?.ToString() ?? "")
-                ?? [])
+            var text = file.GetText(context.CancellationToken);
+
+            foreach (var entry in VocabularyReader.Read(text?.ToString() ?? "") ?? [])
             {
                 var keyType = keyTypes.For(entry.Key);
 
@@ -81,7 +82,9 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         _rule,
-                        Location.None,
+                        text is null
+                            ? VocabularyLocations.Of(file.Path)
+                            : VocabularyLocations.Of(file.Path, text, entry.Span),
                         entry.Key,
                         Path.GetFileName(file.Path),
                         keyType,

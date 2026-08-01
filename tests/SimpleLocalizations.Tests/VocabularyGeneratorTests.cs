@@ -213,6 +213,31 @@ public class VocabularyGeneratorTests
         Assert.Equal(["SL1008"], Generate(Keys("alpha.alpha.one"), Declared()).Ids);
     }
 
+    [Fact]
+    public void A_refusal_points_at_the_entry_that_caused_it()
+    {
+        // A diagnostic carrying no location cannot be navigated to and cannot be suppressed, and leaves a
+        // reader to find the key in a file that may author hundreds.
+        var run = Generate(Keys("alpha.one", "alpha.two", "Bad.Key"), Declared());
+
+        var location = run.Diagnostics.Single().Location;
+        var lines = location.GetLineSpan();
+
+        Assert.Equal("Vocab.resx", lines.Path);
+        Assert.Equal(Keys("alpha.one", "alpha.two", "Bad.Key").Split('\n')
+            .Select((line, index) => (line, index))
+            .Single(pair => pair.line.Contains("Bad.Key")).index,
+            lines.StartLinePosition.Line);
+    }
+
+    [Fact]
+    public void A_refusal_about_the_file_points_at_the_file()
+    {
+        var run = Generate(Keys(), Declared());
+
+        Assert.Equal("Vocab.resx", run.Diagnostics.Single().Location.GetLineSpan().Path);
+    }
+
     [Theory]
     [InlineData("Bad.Key")]
     [InlineData("alpha.one.two")]

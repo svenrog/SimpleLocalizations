@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
@@ -62,6 +62,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         var hint = VocabularyMetadata.Read(options, file, VocabularyMetadata.Hint);
 
         return new Vocabulary(
+            file.Path,
             Path.GetFileName(file.Path),
             file.GetText(token)?.ToString() ?? "",
             className,
@@ -74,26 +75,32 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
     private static void Produce(SourceProductionContext production, Vocabulary vocabulary)
     {
+        var file = VocabularyLocations.Of(vocabulary.Path);
+
         if (string.IsNullOrWhiteSpace(vocabulary.KeyType) || string.IsNullOrWhiteSpace(vocabulary.Namespace))
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Undeclared, Location.None, vocabulary.FileName));
+                VocabularyDiagnostics.Undeclared, file, vocabulary.FileName));
             return;
         }
 
         if (VocabularyKeyTypes.Parse(vocabulary.KeyType) is not { } keyTypes)
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.KeyTypeMalformed, Location.None, vocabulary.FileName, vocabulary.KeyType));
+                VocabularyDiagnostics.KeyTypeMalformed, file, vocabulary.FileName, vocabulary.KeyType));
             return;
         }
 
         if (VocabularyReader.Read(vocabulary.Resx) is not { } entries)
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Unreadable, Location.None, vocabulary.FileName));
+                VocabularyDiagnostics.Unreadable, file, vocabulary.FileName));
             return;
         }
+
+        var text = SourceText.From(vocabulary.Resx);
+        Location At(VocabularyEntry? entry) =>
+            entry is null ? file : VocabularyLocations.Of(vocabulary.Path, text, entry.Span);
 
         var derived = Derived(vocabulary.Derived);
         var root = VocabularyNode.Root();
@@ -111,15 +118,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             if (!_wellFormed.IsMatch(entry.Key))
             {
                 production.ReportDiagnostic(Diagnostic.Create(
-                    VocabularyDiagnostics.Malformed, Location.None, entry.Key, vocabulary.FileName));
+                    VocabularyDiagnostics.Malformed, At(entry), entry.Key, vocabulary.FileName));
                 refused = true;
                 continue;
             }
 
             if (root.Add(entry) is { } taken)
             {
+                // The key named is the one already filed; where it is a branch it authors nothing of its own,
+                // so the entry that collided with it is the nearest thing in the file to point at.
                 production.ReportDiagnostic(Diagnostic.Create(
-                    VocabularyDiagnostics.Nested, Location.None, taken.Path, vocabulary.FileName));
+                    VocabularyDiagnostics.Nested, At(taken.Entry ?? entry), taken.Path, vocabulary.FileName));
                 refused = true;
             }
         }
@@ -128,7 +137,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         // moves the failure to every *other* key's call sites as a pile of CS0117 naming no resource file —
         // which is the cascade SL1004 and SL1005 exist to keep out of a consumer's build.
         refused |= VocabularyCollisions.Prune(
-            root, vocabulary.ClassName, vocabulary.FileName, production.ReportDiagnostic);
+            root, vocabulary.ClassName, vocabulary.FileName, At, production.ReportDiagnostic);
 
         if (root.Children.Count == 0)
         {
@@ -137,7 +146,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             if (!refused)
             {
                 production.ReportDiagnostic(Diagnostic.Create(
-                    VocabularyDiagnostics.Empty, Location.None, vocabulary.FileName));
+                    VocabularyDiagnostics.Empty, file, vocabulary.FileName));
             }
 
             return;
@@ -185,9 +194,10 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     private readonly struct Vocabulary : IEquatable<Vocabulary>
     {
         public Vocabulary(
-            string fileName, string resx, string className, string keyType, string @namespace, string derived,
-            string resourceName, string hint)
+            string path, string fileName, string resx, string className, string keyType, string @namespace,
+            string derived, string resourceName, string hint)
         {
+            Path = path;
             FileName = fileName;
             Resx = resx;
             ClassName = className;
@@ -198,6 +208,10 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             Hint = hint;
         }
 
+        /// <summary>Where the resource is, which is where a diagnostic about it points.</summary>
+        public string Path { get; }
+
+        /// <summary>What the resource is called, which is how a message names it.</summary>
         public string FileName { get; }
 
         public string Resx { get; }
@@ -216,13 +230,13 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         public string Hint { get; }
 
         public bool Equals(Vocabulary other) =>
-            FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
+            Path == other.Path && FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
             && KeyType == other.KeyType && Namespace == other.Namespace && Derived == other.Derived
             && ResourceName == other.ResourceName && Hint == other.Hint;
 
         public override bool Equals(object? obj) => obj is Vocabulary other && Equals(other);
 
         public override int GetHashCode() =>
-            (FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName, Hint).GetHashCode();
+            (Path, FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName, Hint).GetHashCode();
     }
 }
