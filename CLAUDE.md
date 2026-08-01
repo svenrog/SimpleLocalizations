@@ -76,9 +76,11 @@ measuring it needs a process-wide count, which is why the assembly runs its test
 A ceiling is only worth its line if it fails on the regression it names. Check that by breaking the thing on
 purpose before trusting the green.
 
-`bench/SimpleLocalizations.Benchmarks` holds the numbers, run by hand (`dotnet run -c Release -- --filter
-*Runtime*`) and never in CI. It sweeps resources from ten keys to a hundred thousand, the last to show there
-is no cliff rather than because anyone will author one.
+`tests/SimpleLocalizations.Benchmarks` holds the numbers, run by hand (`dotnet run -c Release -- --filter
+*Runtime*`) and never in CI. It sits beside the tests but is not one — nothing in it can fail a build, and
+`.editorconfig` scopes its `CA1822` exemption to that folder rather than to `tests/`. It sweeps resources
+from ten keys to a hundred thousand, the last to show there is no cliff rather than because anyone will
+author one.
 
 `DocumentedExamplesTests` compiles the call sites `README.md` and `docs/` show, **read out of the markdown**
 rather than copied — a test holding its own copy proves the copy compiles and says nothing about what a
