@@ -70,6 +70,17 @@ public class VocabularyGeneratorTests
     }
 
     [Fact]
+    public void A_flat_key_spelled_like_a_family_takes_that_familys_key_type()
+    {
+        // A key with no dot is its own first segment, so it is filed under a family of the same name even
+        // though it opens none.
+        var run = Generate(Keys("detail"), Declared("Probe.ProbeKey | detail=Probe.OtherKey"));
+
+        Assert.Empty(run.Ids);
+        Assert.Contains("global::Probe.OtherKey Detail =>", run.OnlySource);
+    }
+
+    [Fact]
     public void A_declaration_separated_by_a_semicolon_arrives_truncated()
     {
         // Why SL1009 exists, and why it cannot be a Roslyn diagnostic: the metadata reaches here through an
