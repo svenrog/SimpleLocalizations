@@ -5,7 +5,9 @@ Guidance for Claude Code in this repository.
 ## What this is
 
 A localization pipeline for text whose **identity is stored**. `README.md` holds the user-facing what and
-why; this file holds the where and the rules. Extracted from the Overlode repo, which is its first consumer.
+why for the simple path only — it is also the packed `PackageReadmeFile`, so anything it links must be an
+absolute GitHub URL — and `docs/` holds everything past it. This file holds the where and the rules.
+Extracted from the Overlode repo, which is its first consumer.
 
 Two projects, one package:
 
@@ -46,8 +48,8 @@ too.
 ## Diagnostics
 
 Ids `SL1001`–`SL1014`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
-through its own strictness. The set and what each refuses is the table in `README.md`, which is the one
-statement of it; `AnalyzerReleases.Unshipped.md` is the tracked form `RS2008` requires.
+through its own strictness. The set and what each refuses is the table in `docs/diagnostics.md`, which is the
+one statement of it; `AnalyzerReleases.Unshipped.md` is the tracked form `RS2008` requires.
 
 Ids are a public commitment. A new rule takes the next free id and never reuses a retired one.
 
