@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- The words a benchmark resolves. Small on purpose: what is being measured is the cost of a lookup and a
+       fill, not how much text a ResourceManager can hold. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="greeting" xml:space="preserve">
+    <value>Hello</value>
+  </data>
+  <data name="composed" xml:space="preserve">
+    <value>found {0} of {1}</value>
+  </data>
+</root>

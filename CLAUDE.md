@@ -68,6 +68,18 @@ test reaches.
 Every diagnostic has a case that fires it and, where the rule has an off switch or a scope, a case proving it
 stays silent. A rule with only a positive case passes when it fires on everything.
 
+`tests/SimpleLocalizations.Tests/Performance` holds what may fail a build: incremental-cache step reasons,
+per-call allocation ceilings, and one size ratio. Never a clock — a shared runner has none worth asserting
+on, and a timing test that flakes gets disabled rather than fixed. An analyzer's work is scheduled, so
+measuring it needs a process-wide count, which is why the assembly runs its tests one at a time.
+
+A ceiling is only worth its line if it fails on the regression it names. Check that by breaking the thing on
+purpose before trusting the green.
+
+`bench/SimpleLocalizations.Benchmarks` holds the numbers, run by hand (`dotnet run -c Release -- --filter
+*Runtime*`) and never in CI. It sweeps resources from ten keys to a hundred thousand, the last to show there
+is no cliff rather than because anyone will author one.
+
 `DocumentedExamplesTests` compiles the call sites `README.md` and `docs/` show, **read out of the markdown**
 rather than copied — a test holding its own copy proves the copy compiles and says nothing about what a
 reader is told. A `csharp` fence is preceded by `<!-- compiles: {fixture} -->` naming the resources it is
