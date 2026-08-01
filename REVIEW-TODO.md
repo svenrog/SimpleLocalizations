@@ -70,11 +70,14 @@ harness before it was written down.
 
 ## Found while fixing
 
-- [ ] **16. The shipped list patterns are not spelled the way the package makes everyone else spell.**
+- [x] **16. The shipped list patterns are not spelled the way the package makes everyone else spell.**
       `List_And_Two` against `SL1001`'s "a key is lowercase wherever it is authored". Harmless while the
       names were private; #10 made them a published contract (`ListFormatter.Patterns`), so the off-house
       spelling would ship in consumer-facing API. Free to change now — `Patterns` is new on this branch and
-      the names were never nameable by a consumer before. Fix: `list.and.two`, and so on.
+      the names were never nameable by a consumer before. Fixed as `list-and-two`: **flat kebab, not
+      dotted**. A dot is the one notation that becomes structure — a nested class, a `Prefix`, a `Covers` —
+      and nothing is generated from these, so a dotted spelling would promise a nesting that never arrives.
+      `docs/typed-keys.md` already says a dot buys a family and nothing owes one.
 
 ## Minor
 

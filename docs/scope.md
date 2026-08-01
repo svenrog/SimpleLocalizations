@@ -32,11 +32,11 @@ the list, so a pattern added here fails your build rather than someone's reader.
 
 | Key | Fills with |
 | --- | --- |
-| `List_And_Two`, `List_Or_Two` | `{0}` and `{1}`: the only two items |
-| `List_And_Middle`, `List_Or_Middle` | `{0}` the accumulated head, `{1}` the next item |
-| `List_And_End`, `List_Or_End` | `{0}` the head, `{1}` the last item |
-| `List_Separator` | `{0}` the head, `{1}` the next item — a plain join, no conjunction |
-| `List_Truncated` | `{0}` the items named, `{1}` how many were dropped |
+| `list-and-two`, `list-or-two` | `{0}` and `{1}`: the only two items |
+| `list-and-middle`, `list-or-middle` | `{0}` the accumulated head, `{1}` the next item |
+| `list-and-end`, `list-or-end` | `{0}` the head, `{1}` the last item |
+| `list-separator` | `{0}` the head, `{1}` the next item — a plain join, no conjunction |
+| `list-truncated` | `{0}` the items named, `{1}` how many were dropped |
 
 ## Why a list formatter
 

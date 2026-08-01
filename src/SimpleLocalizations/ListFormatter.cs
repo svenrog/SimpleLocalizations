@@ -34,18 +34,24 @@ public static class ListFormatter
     /// The keys a catalog must author to stand in for this package's own, in the order a list uses them:
     /// the two-item form, the pattern folded over the middle, the one before the final conjunction, the
     /// plain separator, and the truncation. Each takes <c>{0}</c> as the accumulated head and <c>{1}</c> as
-    /// the next item — except <c>List_Truncated</c>, whose <c>{1}</c> is the count that was dropped.
+    /// the next item — except <c>list-truncated</c>, whose <c>{1}</c> is the count that was dropped.
     /// <para>
     /// Named here because passing a catalog makes them a contract rather than an implementation detail: a
     /// consumer's parity test reads this, and a key added to the package without one added to the list would
     /// throw in someone else's build.
     /// </para>
+    /// <para>
+    /// Lowercase, and <b>flat</b>: a dot is the one piece of notation that becomes structure here — it
+    /// generates a nested class, a <c>Prefix</c> and a <c>Covers</c> — and nothing is generated from these.
+    /// A dotted spelling would promise a nesting that never arrives, so the words are hyphenated inside one
+    /// segment, which is what this package spells everywhere a key names no family.
+    /// </para>
     /// </summary>
     public static IReadOnlyList<string> Patterns { get; } =
     [
-        "List_And_Two", "List_And_Middle", "List_And_End",
-        "List_Or_Two", "List_Or_Middle", "List_Or_End",
-        "List_Separator", "List_Truncated",
+        "list-and-two", "list-and-middle", "list-and-end",
+        "list-or-two", "list-or-middle", "list-or-end",
+        "list-separator", "list-truncated",
     ];
 
     /// <summary>
@@ -58,7 +64,7 @@ public static class ListFormatter
     /// own when omitted.
     /// </param>
     public static string And(IEnumerable<string> items, StringCatalog? patterns = null) =>
-        Joined(items, "List_And", patterns ?? _shipped);
+        Joined(items, "list-and", patterns ?? _shipped);
 
     /// <summary>
     /// The items as a disjunction list — <c>"a or b"</c>, <c>"a, b, or c"</c>. The serial comma is the same
@@ -71,9 +77,9 @@ public static class ListFormatter
     /// own when omitted.
     /// </param>
     public static string Or(IEnumerable<string> items, StringCatalog? patterns = null) =>
-        Joined(items, "List_Or", patterns ?? _shipped);
+        Joined(items, "list-or", patterns ?? _shipped);
 
-    private static string Joined(IEnumerable<string> items, string family, StringCatalog patterns)
+    private static string Joined(IEnumerable<string> items, string prefix, StringCatalog patterns)
     {
         var list = items.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
 
@@ -81,14 +87,14 @@ public static class ListFormatter
         {
             0 => string.Empty,
             1 => list[0],
-            2 => Format(patterns, $"{family}_Two", list[0], list[1]),
+            2 => Format(patterns, $"{prefix}-two", list[0], list[1]),
             // Folded left so the pattern applies pairwise, which is how ICU's list patterns compose: the
             // accumulated head is always the first argument, the next item the second.
             _ => Format(
                 patterns,
-                $"{family}_End",
+                $"{prefix}-end",
                 list.Take(list.Count - 1).Skip(1)
-                    .Aggregate(list[0], (head, item) => Format(patterns, $"{family}_Middle", head, item)),
+                    .Aggregate(list[0], (head, item) => Format(patterns, $"{prefix}-middle", head, item)),
                 list[list.Count - 1]),
         };
     }
@@ -125,7 +131,7 @@ public static class ListFormatter
 
         return Format(
             catalog,
-            "List_Truncated",
+            "list-truncated",
             Join([.. items.Take(max)], catalog),
             (items.Count - max).ToString(CultureInfo.CurrentCulture));
     }
@@ -133,7 +139,7 @@ public static class ListFormatter
     /// <summary>A plain separated join, pattern-driven so a culture that separates differently can say so.</summary>
     private static string Join(IReadOnlyList<string> items, StringCatalog patterns) =>
         items.Count == 0 ? string.Empty : items.Skip(1).Aggregate(items[0],
-            (head, item) => Format(patterns, "List_Separator", head, item));
+            (head, item) => Format(patterns, "list-separator", head, item));
 
     private static string Format(StringCatalog patterns, string key, string first, string second) =>
         string.Format(CultureInfo.CurrentCulture, patterns.Get(key), first, second);
