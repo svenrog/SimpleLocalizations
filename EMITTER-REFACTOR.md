@@ -31,12 +31,14 @@ Every one of these is per emitted line, and there are roughly ten lines per key:
 4. **Buffer growth** — the `StringBuilder` starts empty and doubles, so a 20 MB result is reached by copying
    about 40 MB. The final `ToString()` and `SourceText.From` then copy it twice more.
 
-## Do this first
+## Phase one: widen the test surface
+
+Part of the work rather than a gate on it, and the half that decides whether the rest is low risk.
 
 The existing tests assert **fragments** of the emitted source (`Assert.Contains("public static class Alpha")`
 and about twenty more). That is the right shape for the features — it is why the emitter can be rewritten at
 all without rewriting the suite — but it does not pin the whole document, so a rewrite can change the output
-in ways nothing notices. Three gaps to close **before** touching the emitter, each a commit of its own:
+in ways nothing notices. Three gaps, each a commit of its own:
 
 1. **A golden test.** Assert the complete emitted text for one vocabulary exercising every branch: a flat
    key, a two-level family, a three-level family, a documented entry, an undocumented one, a reserved-name
@@ -53,7 +55,7 @@ in ways nothing notices. Three gaps to close **before** touching the emitter, ea
    two-key fixtures the documentation shows. Add one that compiles a vocabulary four levels deep with a
    hundred keys, so indentation and nesting are checked by the compiler rather than by a substring.
 
-## Then the change
+## Phase two: the change itself
 
 Ordered so each step is separately measurable, and none of them changes a character of output:
 
