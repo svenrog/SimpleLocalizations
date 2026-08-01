@@ -5,7 +5,9 @@
 ## What is not here
 
 **A read edge.** Resolving a stored record's title through a chain of registered sources is shaped by what
-your records are. `ILocalizedTextSource` is the seam; composing it is yours.
+your records are — which project owns which words, and how a spine reaches the plug-ins above it. A
+`StringCatalog` per project is what this package gives you; the seam that composes them is yours to declare,
+because its shape is your project graph's rather than ours.
 
 **A refusal's wording.** `TextCultures.TryResolve` answers `bool` and no message. This package authors no
 resource your reader can translate, and nothing may word a refusal on your behalf. Same reason

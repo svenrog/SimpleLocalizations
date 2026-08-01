@@ -42,7 +42,7 @@ harness before it was written down.
 - [x] **8. Every diagnostic is `Location.None`** — a resx diagnostic names its key but no position, so it
       cannot be navigated to or suppressed. Fix: locate into the `AdditionalText`.
 
-- [ ] **9. Drop `ILocalizedTextSource`** — no implementations, consumers or tests. Decision: remove it.
+- [x] **9. Drop `ILocalizedTextSource`** — no implementations, consumers or tests. Decision: remove it.
 
 - [ ] **10. `ListFormatter` cannot reach a consumer's patterns** — the resource set is this assembly's, so
       `scope.md`'s "ship a satellite beside it" is not reachable for a consumer. Decision: accept a
