@@ -17,6 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The pipeline stage names are the tests' to read and nobody else's: a caching test has to name a
+         stage to ask whether it was reused, and that is not a reason to make one public API. -->
+    <InternalsVisibleTo Include="SimpleLocalizations.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- PrivateAssets: an analyzer assembly loads into the compiler, which brings its own Roslyn, so flowing
          this to a consumer would put a second copy beside it. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />

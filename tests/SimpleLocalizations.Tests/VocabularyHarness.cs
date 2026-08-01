@@ -177,6 +177,38 @@ internal static class VocabularyHarness
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
 
+    /// <summary>
+    /// A driver that records which pipeline stages each run reused, for the tests that ask what a second run
+    /// costs rather than what it produced.
+    /// </summary>
+    public static GeneratorDriver Tracking(
+        IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources,
+        params IIncrementalGenerator[] generators)
+    {
+        var (texts, options) = Files(resources);
+
+        return CSharpGeneratorDriver.Create(
+            [.. generators.Select(generator => generator.AsSourceGenerator())],
+            texts,
+            optionsProvider: options,
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+    }
+
+    /// <summary>An empty compilation, for a run whose inputs are resources rather than syntax.</summary>
+    public static CSharpCompilation Empty(string source = "") => Compile(source);
+
+    /// <summary>
+    /// Why each run of <paramref name="stage"/> produced what it did — <c>Cached</c> and <c>Unchanged</c>
+    /// being the two that mean no work was repeated.
+    /// </summary>
+    public static IReadOnlyList<IncrementalStepRunReason> Reasons(GeneratorDriver driver, string stage) =>
+    [
+        .. driver.GetRunResult().Results
+            .SelectMany(result => result.TrackedSteps.TryGetValue(stage, out var runs) ? runs : [])
+            .SelectMany(run => run.Outputs)
+            .Select(output => output.Reason),
+    ];
+
     private static (ImmutableArray<AdditionalText> Texts, AnalyzerConfigOptionsProvider Options) Files(
         IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources)
     {
