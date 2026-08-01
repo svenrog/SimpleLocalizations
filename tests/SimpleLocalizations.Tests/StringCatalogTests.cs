@@ -64,6 +64,23 @@ public class StringCatalogTests
     }
 
     [Fact]
+    public void A_template_with_holes_and_no_args_throws_on_every_path()
+    {
+        // Skipping the fill for an empty arg list left `{0}` in the string — on the one path whose whole
+        // purpose is text about to be stored, where it is not recoverable.
+        Assert.Throws<FormatException>(() => _catalog.Neutral("composed"));
+        Assert.Throws<FormatException>(() => _catalog.Format("composed"));
+        Assert.Throws<FormatException>(() => _catalog.Say("composed"));
+    }
+
+    [Fact]
+    public void A_template_with_no_holes_needs_no_args()
+    {
+        Assert.Equal("Hello", _catalog.Neutral("greeting"));
+        Assert.Equal(_catalog.Get("greeting"), _catalog.Format("greeting"));
+    }
+
+    [Fact]
     public void A_culture_file_authors_no_key_the_neutral_set_lacks()
     {
         // A key only a culture has is unreachable: nothing resolves it, because nothing declared it.

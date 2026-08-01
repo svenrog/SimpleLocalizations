@@ -24,9 +24,14 @@ public readonly struct LocalizedText : IEquatable<LocalizedText>
     /// <summary>
     /// The only producer: <paramref name="key"/> resolved against <paramref name="catalog"/>, with
     /// <paramref name="args"/> filled in. Reached through <see cref="StringCatalog.Say(string, object?[])"/>.
+    /// <para>
+    /// Always through <see cref="StringCatalog.Format(string, object?[])"/>, never around it for an empty
+    /// arg list: a template whose holes go unfilled renders <c>{0}</c> at a reader, and one path that skips
+    /// the fill is one sentence the others cannot reproduce.
+    /// </para>
     /// </summary>
     internal static LocalizedText From(StringCatalog catalog, string key, object?[] args) =>
-        new(args.Length == 0 ? catalog.Get(key) : catalog.Format(key, args));
+        new(catalog.Format(key, args));
 
     public static bool operator ==(LocalizedText left, LocalizedText right) => left.Equals(right);
 

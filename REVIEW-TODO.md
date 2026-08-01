@@ -18,7 +18,7 @@ harness before it was written down.
       top-level `Probe.NestedKey` with a full body, while the nested type keeps none. Fix: re-emit the
       enclosing `partial` chain.
 
-- [ ] **3. `Neutral` returns an unfilled template when given no args** — `Template.Fill` short-circuits on
+- [x] **3. `Neutral` returns an unfilled template when given no args** *(`LocalizedText.From` had it too)* — `Template.Fill` short-circuits on
       an empty arg list and hands the template back verbatim. Verified: `Neutral("composed")` yields
       `found {0} of {1}`, on the path whose whole purpose is text that gets stored. Fix: fill unconditionally.
 

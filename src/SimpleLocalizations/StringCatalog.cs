@@ -74,6 +74,10 @@ public sealed class StringCatalog
     /// The neutral culture because a reader's copy is composed again from the key at the read edge; invariant
     /// filling because an interpolated number belongs to no reader either, and a stored string is what the
     /// identity every verdict is filed under is made of.
+    /// <para>
+    /// A template with holes and no args to fill them throws, like every other fill: a literal <c>{0}</c>
+    /// reaching a database is not recoverable, and this is the path that writes one there.
+    /// </para>
     /// </remarks>
     public string Neutral(string key, params string[] args) =>
         Template.Fill(CultureInfo.InvariantCulture, Get(key, _neutral), args);
@@ -84,7 +88,7 @@ public sealed class StringCatalog
     /// the sentence does.
     /// </summary>
     public string Format(string key, params object?[] args) =>
-        string.Format(CultureInfo.CurrentCulture, Get(key), args);
+        Template.Fill(CultureInfo.CurrentCulture, Get(key), args);
 
     /// <summary>
     /// <see cref="Format(string, object?[])"/> as a <see cref="LocalizedText"/> — the same sentence, carrying the proof that it
