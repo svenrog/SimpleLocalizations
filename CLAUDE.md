@@ -73,9 +73,13 @@ unmarked fence fails, so a new example cannot arrive untested.
 
 ## Code style
 
-Mirrors Overlode and SimpleCrawler (`.editorconfig`, `TreatWarningsAsErrors`):
+Mirrors Overlode and SimpleCrawler (`.editorconfig`, `TreatWarningsAsErrors`, `MSBuildTreatWarningsAsErrors`
+for the MSBuild half `TreatWarningsAsErrors` cannot reach):
 
 - Primary constructors disabled (IDE0290) in `src`; test fixtures may use them.
+- A rule that ships at **Info** severity is advice nothing enforces — `dotnet build` never prints it.
+  Promoting one to `warning` in `.editorconfig` is how it becomes a rule: `SYSLIB1045` (`[GeneratedRegex]`
+  over a run-time `Regex`) and `CA1865`–`CA1867` (the `char` overloads) are there for that reason.
 - Private fields `_camelCase`, including static/const. One top-level class per `.cs` file, filename matches.
 - Declaration comments go in `/// <summary>` XmlDoc, not `//`. Plain `//` is rare in-body rationale only.
 - **Comment only what the code cannot show, only where a reader would otherwise get it wrong.** State the

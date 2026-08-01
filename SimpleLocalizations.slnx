@@ -7,7 +7,7 @@
     <File Path="README.md" />
     <File Path="THIRD-PARTY-NOTICES.md" />
   </Folder>
-  <Folder Name="/docs/">
+  <Folder Name="/Solution Items/docs/">
     <File Path="docs/declaring-a-vocabulary.md" />
     <File Path="docs/diagnostics.md" />
     <File Path="docs/scope.md" />
@@ -16,6 +16,6 @@
   <Folder Name="/Tests/">
     <Project Path="tests/SimpleLocalizations.Tests/SimpleLocalizations.Tests.csproj" />
   </Folder>
-  <Project Path="src/SimpleLocalizations/SimpleLocalizations.csproj" />
   <Project Path="src/SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj" />
+  <Project Path="src/SimpleLocalizations/SimpleLocalizations.csproj" />
 </Solution>

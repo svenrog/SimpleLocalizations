@@ -14,7 +14,11 @@
          error — CS1591 (undocumented member) and CS1573 (an undocumented parameter beside documented ones)
          are completeness rules, which is a style call rather than a comment that lies. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS0419</NoWarn>
+    <!-- This package's own SL1009 is an MSBuild warning rather than a compiler one — the declaration it reads
+         is gone by the time the compiler runs — so TreatWarningsAsErrors above does not reach it, here or in
+         any consumer. Set for the same reason it is documented. -->
+    <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>

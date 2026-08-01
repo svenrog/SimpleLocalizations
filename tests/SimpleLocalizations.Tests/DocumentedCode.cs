@@ -4,72 +4,74 @@ using System.Text.RegularExpressions;
 namespace SimpleLocalizations.Tests;
 
 /// <summary>
-/// The C# fences in this repository's markdown, read off disk. The documentation is the source: a test
+/// The fenced code in this repository's markdown, read off disk. The documentation is the source: a test
 /// holding its own copy of an example proves the copy compiles and says nothing about what a reader is told.
+/// <para>
+/// Nothing here knows what a block means. A fence may carry a marker — an HTML comment on the line above,
+/// which the rendered page does not show — and what the kinds are worth is the reading test's business.
+/// </para>
 /// </summary>
-internal static class DocumentedCode
+internal static partial class DocumentedCode
 {
-    /// <summary>What a fence is marked with, in an HTML comment the rendered page does not show.</summary>
-    private static readonly Regex _marked = new(
-        @"<!--\s*(?<kind>compiles|illustrative):\s*(?<fixture>[^\s>-][^>]*?)\s*-->\r?\n```csharp\r?\n(?<code>.*?)\r?\n```",
-        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+    /// <summary>Directories holding build output rather than documentation.</summary>
+    private static readonly string[] _ignored = ["bin", "obj", "artifacts", "TestResults", ".git", ".vs"];
 
-    private static readonly Regex _fenced = new(
-        @"```csharp\r?\n(?<code>.*?)\r?\n```",
-        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+    /// <summary>
+    /// A fence, with the marker above it if it carries one: <c>&lt;!-- kind: argument --&gt;</c>. The marker
+    /// is optional so that one pass finds both the blocks a test reads and the blocks nothing does.
+    /// </summary>
+    [GeneratedRegex(
+        @"(?:<!--[ \t]*(?<kind>[A-Za-z]+):[ \t]*(?<argument>[^>]*?)[ \t]*-->\r?\n)?"
+        + @"```(?<language>[A-Za-z0-9#+-]*)\r?\n(?<code>.*?)\r?\n```",
+        RegexOptions.Singleline | RegexOptions.CultureInvariant,
+        matchTimeoutMilliseconds: 5000)]
+    private static partial Regex Fence();
 
-    /// <summary>A marked block: where it is, which fixture it names, and whether it claims to compile.</summary>
-    public readonly record struct Block(string Source, string Fixture, string Code, bool Compiles);
-
-    /// <summary>Every marked C# block, across every documented file.</summary>
-    public static IEnumerable<Block> Blocks()
+    /// <summary>A block, where it is, and what it says about itself.</summary>
+    public readonly record struct Block(
+        string Source, int Line, string Language, string Kind, string Argument, string Code)
     {
-        foreach (var file in Documents())
-        {
-            var text = File.ReadAllText(file);
+        /// <summary>Whether the fence carries a marker at all.</summary>
+        public bool IsMarked => Kind.Length > 0;
 
-            foreach (Match match in _marked.Matches(text))
-            {
-                yield return new Block(
-                    Path.GetFileName(file),
-                    match.Groups["fixture"].Value.Split(',')[0].Trim(),
-                    match.Groups["code"].Value,
-                    match.Groups["kind"].Value == "compiles");
-            }
-        }
+        /// <summary>The block, named the way a failure has to name it to be findable.</summary>
+        public override string ToString() => $"{Source}:{Line}";
     }
 
-    /// <summary>The C# blocks carrying no marker, named by the file and their first line.</summary>
-    public static IEnumerable<string> Unmarked()
+    /// <summary>Every fence of <paramref name="language"/>, marked or not, across every markdown file.</summary>
+    public static IEnumerable<Block> Blocks(string language)
     {
         foreach (var file in Documents())
         {
             var text = File.ReadAllText(file);
-            var marked = _marked.Matches(text).Select(match => match.Groups["code"].Value).ToHashSet(StringComparer.Ordinal);
 
-            foreach (Match match in _fenced.Matches(text))
+            foreach (var match in Fence().Matches(text).Cast<Match>())
             {
-                var code = match.Groups["code"].Value;
-
-                if (!marked.Contains(code))
+                if (!string.Equals(match.Groups["language"].Value, language, StringComparison.OrdinalIgnoreCase))
                 {
-                    yield return $"{Path.GetFileName(file)}: {code.Split('\n')[0].Trim()}";
+                    continue;
                 }
+
+                yield return new Block(
+                    Relative(file),
+                    text.Take(match.Index).Count(character => character == '\n') + 1,
+                    language,
+                    match.Groups["kind"].Value,
+                    match.Groups["argument"].Value,
+                    match.Groups["code"].Value);
             }
         }
     }
 
-    /// <summary>`README.md` and everything under `docs/`.</summary>
-    private static IEnumerable<string> Documents()
-    {
-        var root = Root();
+    /// <summary>Every markdown file in the repository, build output aside.</summary>
+    private static IEnumerable<string> Documents() =>
+        Directory
+            .EnumerateFiles(Root(), "*.md", SearchOption.AllDirectories)
+            .Where(file => !Relative(file).Split('/').Any(segment => _ignored.Contains(segment)))
+            .OrderBy(file => file, StringComparer.Ordinal);
 
-        return
-        [
-            Path.Combine(root, "README.md"),
-            .. Directory.EnumerateFiles(Path.Combine(root, "docs"), "*.md").OrderBy(path => path, StringComparer.Ordinal),
-        ];
-    }
+    private static string Relative(string file) =>
+        Path.GetRelativePath(Root(), file).Replace('\\', '/');
 
     /// <summary>
     /// The repository root, from this file's own compile-time path: the documentation is not copied to the
