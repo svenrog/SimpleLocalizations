@@ -13,10 +13,8 @@
     <File Path="docs/scope.md" />
     <File Path="docs/typed-keys.md" />
   </Folder>
-  <Folder Name="/Benchmarks/">
-    <Project Path="tests/SimpleLocalizations.Benchmarks/SimpleLocalizations.Benchmarks.csproj" />
-  </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/SimpleLocalizations.Benchmarks/SimpleLocalizations.Benchmarks.csproj" />
     <Project Path="tests/SimpleLocalizations.Tests/SimpleLocalizations.Tests.csproj" />
   </Folder>
   <Project Path="src/SimpleLocalizations.Generator/SimpleLocalizations.Generator.csproj" />
