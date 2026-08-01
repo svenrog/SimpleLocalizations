@@ -66,8 +66,18 @@ public static class ListFormatter
     /// long list takes when naming every member would bury the point. Under the cap it is a plain join, not a
     /// conjunction list: this is an enumeration the reader scans, not a sentence.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="max"/> is below one. A cap that names nothing is not a truncation — it rendered as a
+    /// separator with no item before it — and a caller computing one from a count has a bug this hides.
+    /// </exception>
     public static string Truncated(IReadOnlyList<string> items, int max)
     {
+        if (max < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(max), max, "a truncated list names at least one item");
+        }
+
         if (items.Count <= max)
         {
             return Join(items);

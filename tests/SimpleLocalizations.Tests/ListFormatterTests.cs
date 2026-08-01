@@ -62,4 +62,14 @@ public class ListFormatterTests
         Assert.Equal("a, b, +2 more", InCulture("en-US", () => ListFormatter.Truncated(["a", "b", "c", "d"], 2)));
         Assert.Equal("a, b, +2 till", InCulture("sv-SE", () => ListFormatter.Truncated(["a", "b", "c", "d"], 2)));
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void A_cap_that_names_nothing_is_refused(int max)
+    {
+        // It rendered as a separator with no item before it — ", +2 more" — which reads as a formatting bug
+        // in the sentence around it rather than as the caller's arithmetic.
+        Assert.Throws<ArgumentOutOfRangeException>(() => ListFormatter.Truncated(["a", "b"], max));
+    }
 }

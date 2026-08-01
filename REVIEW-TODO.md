@@ -30,7 +30,7 @@ harness before it was written down.
       `en-US` and `sv-SE` supported, `sv`, `en` and `sv-FI` all fall to the neutral culture. Fix: fall back to
       a parent-culture match after the exact one.
 
-- [ ] **6. `Truncated` emits a leading separator for a non-positive `max`** — verified:
+- [x] **6. `Truncated` emits a leading separator for a non-positive `max`** — verified:
       `Truncated(["a","b"], 0)` yields `, +2 more`.
 
 ## Design
