@@ -65,8 +65,12 @@ harness before it was written down.
 
 ## Performance
 
-- [ ] **14. The family rule recomputes its member set per entry** — `VocabularyKeyFamilies` enumerates the
+- [x] **14. The family rule recomputes its member set per entry** — `VocabularyKeyFamilies` enumerates the
       set's symbols once per authored key. Fix: hoist per key type.
+
+      Not done, and deliberately: each resx is still XML-parsed twice per compilation, once by `SL1011` and
+      once by `SL1012`. They are separate analyzers with no shared state, and a cache keyed on the
+      compilation is more machinery than the parse costs.
 
 ## Found while fixing
 

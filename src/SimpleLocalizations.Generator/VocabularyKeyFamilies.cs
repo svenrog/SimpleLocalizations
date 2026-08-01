@@ -47,6 +47,11 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
     {
         var options = context.Options.AnalyzerConfigOptionsProvider;
 
+        // A key type's set and the words in it are the same answer for every key of that type — and a
+        // vocabulary is mostly one type. Asked once per type rather than once per key, which is a symbol
+        // walk per authored entry.
+        var sets = new Dictionary<string, (INamedTypeSymbol Set, HashSet<string> Words)?>(StringComparer.Ordinal);
+
         foreach (var file in context.Options.AdditionalFiles)
         {
             if (!VocabularyMetadata.IsVocabulary(options, file))
@@ -68,17 +73,27 @@ public sealed class VocabularyKeyFamilies : DiagnosticAnalyzer
             {
                 var keyType = keyTypes.For(entry.Key);
 
+                if (!sets.TryGetValue(keyType, out var declared))
+                {
+                    declared = Families(context.Compilation, keyType) is { } set
+                        ? (set, [.. VocabularyKeys.Members(set).Select(member => member.Word)])
+                        : null;
+
+                    sets[keyType] = declared;
+                }
+
                 // Silent when the type is not on this compilation, or claims no families: a project may
                 // author keys of a type it cannot see the declaration of.
-                if (Families(context.Compilation, keyType) is not { } families)
+                if (declared is not { } found)
                 {
                     continue;
                 }
 
+                var (families, words) = found;
                 var dot = entry.Key.IndexOf('.');
                 var family = dot < 0 ? entry.Key : entry.Key.Substring(0, dot);
 
-                if (!VocabularyKeys.Members(families).Any(member => member.Word == family))
+                if (!words.Contains(family))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         _rule,
