@@ -50,7 +50,8 @@ harness before it was written down.
 
 ## Claims that are not true
 
-- [ ] **11. The harness stubs the metadata it says it does not** — the csproj and `CLAUDE.md` both justify
+- [x] **11. The harness stubs the metadata it says it does not** *(the `;` truncation is now proven; `SL1009`
+      firing is an MSBuild warning no xUnit test reaches, and stays assumed — noted in `CLAUDE.md`)* — the csproj and `CLAUDE.md` both justify
       the hand-rolled harness by "the metadata goes through the same parser that drops a `;`". It goes
       through a `Dictionary`. Nothing exercises `SL1009` or the truncation. Fix: parse a real `.editorconfig`.
 
@@ -66,6 +67,14 @@ harness before it was written down.
 
 - [ ] **14. The family rule recomputes its member set per entry** — `VocabularyKeyFamilies` enumerates the
       set's symbols once per authored key. Fix: hoist per key type.
+
+## Found while fixing
+
+- [ ] **16. The shipped list patterns are not spelled the way the package makes everyone else spell.**
+      `List_And_Two` against `SL1001`'s "a key is lowercase wherever it is authored". Harmless while the
+      names were private; #10 made them a published contract (`ListFormatter.Patterns`), so the off-house
+      spelling would ship in consumer-facing API. Free to change now — `Patterns` is new on this branch and
+      the names were never nameable by a consumer before. Fix: `list.and.two`, and so on.
 
 ## Minor
 

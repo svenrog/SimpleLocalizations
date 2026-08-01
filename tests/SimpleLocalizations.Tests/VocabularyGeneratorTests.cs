@@ -70,6 +70,22 @@ public class VocabularyGeneratorTests
     }
 
     [Fact]
+    public void A_declaration_separated_by_a_semicolon_arrives_truncated()
+    {
+        // Why SL1009 exists, and why it cannot be a Roslyn diagnostic: the metadata reaches here through an
+        // .editorconfig, whose parser reads ';' as the start of a comment. Everything after the first entry
+        // is gone before the generator is handed anything, so the wrong key types are generated and the
+        // build is clean. By the time this component runs there is nothing left to report.
+        var run = Generate(
+            Keys("alpha.one", "detail.two"),
+            Declared("Probe.ProbeKey ; detail=Probe.OtherKey"));
+
+        Assert.Empty(run.Ids);
+        Assert.DoesNotContain("OtherKey", run.OnlySource);
+        Assert.Contains("global::Probe.ProbeKey Two =>", run.OnlySource);
+    }
+
+    [Fact]
     public void A_derived_suffix_is_authored_but_generates_no_member()
     {
         var run = Generate(Keys("alpha.one", "alpha.one.pitch"), Declared(derived: "pitch"));
