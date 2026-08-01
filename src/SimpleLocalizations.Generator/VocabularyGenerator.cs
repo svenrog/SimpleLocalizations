@@ -97,7 +97,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
         var derived = Derived(vocabulary.Derived);
         var root = VocabularyNode.Root();
-        var declared = true;
+        var refused = false;
 
         foreach (var entry in entries)
         {
@@ -112,7 +112,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             {
                 production.ReportDiagnostic(Diagnostic.Create(
                     VocabularyDiagnostics.Malformed, Location.None, entry.Key, vocabulary.FileName));
-                declared = false;
+                refused = true;
                 continue;
             }
 
@@ -120,25 +120,26 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             {
                 production.ReportDiagnostic(Diagnostic.Create(
                     VocabularyDiagnostics.Nested, Location.None, taken.Path, vocabulary.FileName));
-                declared = false;
+                refused = true;
             }
         }
 
-        if (!declared)
-        {
-            return;
-        }
+        // A key nothing can emit costs itself, never the file. Refusing the whole vocabulary over one bad key
+        // moves the failure to every *other* key's call sites as a pile of CS0117 naming no resource file —
+        // which is the cascade SL1004 and SL1005 exist to keep out of a consumer's build.
+        refused |= VocabularyCollisions.Prune(
+            root, vocabulary.ClassName, vocabulary.FileName, production.ReportDiagnostic);
 
         if (root.Children.Count == 0)
         {
-            production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Empty, Location.None, vocabulary.FileName));
-            return;
-        }
+            // Silent where every key was refused one by one: those diagnostics said why, and this one would
+            // only say that they did.
+            if (!refused)
+            {
+                production.ReportDiagnostic(Diagnostic.Create(
+                    VocabularyDiagnostics.Empty, Location.None, vocabulary.FileName));
+            }
 
-        if (VocabularyCollisions.Check(
-            root, vocabulary.ClassName, vocabulary.FileName, production.ReportDiagnostic))
-        {
             return;
         }
 

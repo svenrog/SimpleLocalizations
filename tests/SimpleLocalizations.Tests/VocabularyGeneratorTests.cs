@@ -213,6 +213,28 @@ public class VocabularyGeneratorTests
         Assert.Equal(["SL1008"], Generate(Keys("alpha.alpha.one"), Declared()).Ids);
     }
 
+    [Theory]
+    [InlineData("Bad.Key")]
+    [InlineData("alpha.one.two")]
+    [InlineData("alpha.tls-1-0")]
+    public void A_key_that_cannot_be_emitted_costs_itself_and_not_the_file(string refused)
+    {
+        // Refusing the whole vocabulary over one bad key moves the failure to every *other* key's call sites,
+        // as a pile of CS0117 naming no resource file — the cascade SL1004 and SL1005 exist to prevent.
+        var run = Generate(Keys("alpha.one", "alpha.tls10", refused), Declared());
+
+        Assert.NotEmpty(run.Ids);
+        Assert.Contains("One =>", run.OnlySource);
+        Assert.Contains("Tls10 =>", run.OnlySource);
+    }
+
+    [Fact]
+    public void A_vocabulary_whose_every_key_was_refused_does_not_also_report_being_empty()
+    {
+        // The refusals said why. SL1005 would only say that they did.
+        Assert.Equal(["SL1001"], Generate(Keys("Bad.Key"), Declared()).Ids);
+    }
+
     [Fact]
     public void A_resource_carrying_no_declaration_is_not_a_vocabulary()
     {

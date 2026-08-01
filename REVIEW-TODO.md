@@ -35,7 +35,7 @@ harness before it was written down.
 
 ## Design
 
-- [ ] **7. One malformed key suppresses the whole vocabulary** — verified: a single bad key emits `SL1001`
+- [x] **7. One malformed key suppresses the whole vocabulary** — verified: a single bad key emits `SL1001`
       and zero sources, so every *valid* key's call sites fail with `CS0117` naming no resource file. That is
       the cascade `SL1004` and `SL1005` exist to avoid. Fix: skip the entry, emit the rest.
 

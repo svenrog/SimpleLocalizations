@@ -46,5 +46,9 @@ Two caveats:
 - **Escalate `SL1003`–`SL1006`.** They fire when the generator emits *nothing*. Left as warnings, the build
   fails anyway — as a pile of `CS0117`/`CS0246` at call sites, naming no resource file. That is exactly the
   failure they exist to prevent.
+
+  The key-level refusals — `SL1001`, `SL1002`, `SL1007`, `SL1008` — are the opposite case. They drop the one
+  key they name and the rest of the file is generated as usual, so one mistyped key costs one member rather
+  than every call site in the project.
 - **`SL1009` needs `MSBuildTreatWarningsAsErrors`.** It is an MSBuild warning rather than a compiler one, so
   `TreatWarningsAsErrors` does not reach it.

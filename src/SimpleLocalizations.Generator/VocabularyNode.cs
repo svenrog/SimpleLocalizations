@@ -34,6 +34,12 @@ internal sealed class VocabularyNode
     public static VocabularyNode Root() => new("", "");
 
     /// <summary>
+    /// Drops <paramref name="child"/>, which is how a key that cannot be emitted stops costing the keys that
+    /// can. Everything filed under it goes with it, and the diagnostic that asked for this names it.
+    /// </summary>
+    public void Remove(VocabularyNode child) => _children.Remove(child.Segment);
+
+    /// <summary>
     /// Files <paramref name="entry"/> under its segments. Returns the node that was already taken, when the
     /// key collides with one that is a prefix of it or that it is a prefix of.
     /// </summary>
