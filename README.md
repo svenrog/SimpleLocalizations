@@ -54,7 +54,7 @@ dotnet add package SimpleLocalizations
 ```csharp
 var text = StringsKeys.Catalog(new TextCultures("en-US", "sv-SE"));
 
-text.Get(StringsKeys.Greeting);                // the template as authored, holes and all
+text.Get(StringsKeys.Greeting);                // "Hello, {0}" for an English reader, "Hej, {0}" for a Swedish reader
 text.Format(StringsKeys.Greeting, "world");    // "Hello, world", or "Hej, world" for a Swedish reader
 text.Neutral(StringsKeys.Greeting, "world");   // "Hello, world" whoever is reading — what you persist
 ```
