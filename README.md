@@ -7,23 +7,31 @@
 
 Localized text whose **identity is stored**.
 
-Most localization libraries answer "what does this string say in the reader's language." This one answers a
-narrower question: *what do you do when the text is also a key* — when a verdict is filed against a record's
-title, a rule matches on it, or a row in a database points at it. Translate that text in place and every
-stored reference is orphaned. Not a crash; a quieter kind of wrong.
+## The problem
 
-- Keys are identity, words are rendered late — the neutral English is stored, the reader's culture is
-  resolved at the read edge.
-- A `.resx` is the one declaration of both. A source generator turns it into typed key members, so a key
-  renamed there moves its callers and one no longer authored stops compiling.
-- The vocabulary is closed. An analyzer refuses a key invented at a call site, which would resolve to no text
-  and read as a finished record.
+Most localization libraries answer one question: what does this string say in the reader's language.
 
-## Usage
+This one answers a narrower one. Sometimes the text is *also a key* — a verdict is filed against a record's
+title, a rule matches on it, a database row points at it. Translate that text in place and every stored
+reference is orphaned. Not a crash; a quieter kind of wrong.
 
-`dotnet add package SimpleLocalizations`
+So this library keeps three rules, and makes the compiler hold them for you:
 
-Point it at a `.resx`. That is the whole declaration:
+| Rule | What it means |
+| --- | --- |
+| Keys are identity | The neutral English is what you store. The reader's culture is resolved later, from the key. |
+| The `.resx` is the only declaration | A generator turns it into typed members, so a renamed key moves its callers and a deleted one stops compiling. |
+| The vocabulary is closed | An analyzer refuses a key invented at a call site — it would resolve to no text and read as a finished record. |
+
+## Install
+
+```
+dotnet add package SimpleLocalizations
+```
+
+## Quick start
+
+**1. Point at a `.resx`.** That is the whole declaration — every setting defaults from the file.
 
 ```xml
 <ItemGroup>
@@ -31,7 +39,7 @@ Point it at a `.resx`. That is the whole declaration:
 </ItemGroup>
 ```
 
-Author the words, keyed lowercase:
+**2. Author the words**, keyed lowercase. The `<comment>` becomes the generated member's XmlDoc.
 
 ```xml
 <data name="greeting" xml:space="preserve">
@@ -40,7 +48,7 @@ Author the words, keyed lowercase:
 </data>
 ```
 
-Name the member, never the key:
+**3. Name the member, never the key.**
 
 <!-- compiles: strings -->
 ```csharp
@@ -50,22 +58,22 @@ text.Format(StringsKeys.Greeting, "world");   // "Hello, world", or "Hej, world"
 text.Neutral(StringsKeys.Greeting, "world");  // "Hello, world" whoever is reading — what you persist
 ```
 
-`StringsKeys` is generated from `Strings.resx`; the class name, namespace, resource name and key type all
-follow the file, and every one of them is overridable. Add `Strings.sv-SE.resx` holding only the entries
-Swedish spells differently and it is picked up — a culture file is an override list, not a copy.
+`StringsKeys` is generated from `Strings.resx`. The class name, namespace, resource name and key type all
+follow the file, and each one is overridable.
+
+**Adding a language?** Drop in `Strings.sv-SE.resx` holding only the entries Swedish spells differently. A
+culture file is an override list, not a copy.
 
 That is the whole of the simple path.
 
 ## Documentation
 
-- [Typed keys](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/typed-keys.md) — when the text
-  *is* an identity, so a key needs a type of its own and a set it is filed under.
-- [Declaring a vocabulary](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/declaring-a-vocabulary.md)
-  — the `VocabularyResource` metadata, what the generator emits, and the one non-obvious constraint.
-- [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) — `SL1001`–`SL1014`,
-  what each refuses, and which to escalate.
-- [Scope](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/scope.md) — what this package
-  deliberately leaves to you, and why it ships a list formatter.
+| Guide | Read it for |
+| --- | --- |
+| [Typed keys](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/typed-keys.md) | Text that *is* an identity: giving a key its own type, and the set it is filed under. |
+| [Declaring a vocabulary](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/declaring-a-vocabulary.md) | Every `VocabularyResource` setting, what gets generated, and the one non-obvious constraint. |
+| [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) | `SL1001`–`SL1014`: what each refuses, and which to make fatal. |
+| [Scope](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/scope.md) | What this package leaves to you, and why it ships a list formatter. |
 
 ## Icon
 
