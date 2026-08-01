@@ -42,13 +42,48 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
             return null;
         }
 
+        // Outermost first, which is the order they have to be written back out in.
+        var enclosing = new List<INamedTypeSymbol>();
+        for (var containing = symbol.ContainingType; containing is not null; containing = containing.ContainingType)
+        {
+            enclosing.Insert(0, containing);
+        }
+
         return new KeyType(
             symbol.Name,
             symbol.ContainingNamespace.IsGlobalNamespace ? "" : symbol.ContainingNamespace.ToDisplayString(),
             declaration.Modifiers.Any(modifier => modifier.ValueText == "partial"),
             symbol.IsRecord,
-            Accessibility(symbol));
+            Accessibility(symbol),
+            string.Join("|", enclosing.Select(type => type.Name)),
+            string.Join("|", enclosing.Select(Header)),
+            enclosing.FirstOrDefault(type => !CanReopen(type))?.Name ?? "");
     }
+
+    /// <summary>
+    /// Whether the generator can write a second declaration of <paramref name="type"/> to nest a key type
+    /// inside it: one that is not <see langword="partial"/> cannot be reopened at all, and a generic one
+    /// would have to repeat its type parameters and their constraints.
+    /// </summary>
+    private static bool CanReopen(INamedTypeSymbol type) =>
+        type.TypeParameters.Length == 0
+        && type.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<TypeDeclarationSyntax>()
+            .Any(declaration => declaration.Modifiers.Any(modifier => modifier.ValueText == "partial"));
+
+    /// <summary>An enclosing type's declaration, spelled the way a second one of it has to repeat it.</summary>
+    private static string Header(INamedTypeSymbol type) =>
+        $"{Accessibility(type)}{(type.IsStatic ? " static" : "")} partial "
+        + $"{(type.IsRecord ? "record " : "")}{Keyword(type)} {type.Name}";
+
+    private static string Keyword(INamedTypeSymbol type) =>
+        type.TypeKind switch
+        {
+            TypeKind.Struct => "struct",
+            TypeKind.Interface => "interface",
+            _ => "class",
+        };
 
     private static void Produce(SourceProductionContext production, KeyType keyType)
     {
@@ -56,6 +91,13 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
         {
             production.ReportDiagnostic(Diagnostic.Create(
                 VocabularyDiagnostics.NotPartial, Location.None, keyType.Name));
+            return;
+        }
+
+        if (keyType.Closed.Length > 0)
+        {
+            production.ReportDiagnostic(Diagnostic.Create(
+                VocabularyDiagnostics.NotNestable, Location.None, keyType.Name, keyType.Closed));
             return;
         }
 
@@ -71,26 +113,48 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
             source.AppendLine();
         }
 
-        source.AppendLine("/// <summary>");
-        source.AppendLine("/// The body of a vocabulary key: a private constructor and one factory, so a key can only come");
-        source.AppendLine("/// from the generated declaration that authors it.");
-        source.AppendLine("/// </summary>");
-        source.AppendLine($"{keyType.Access} readonly partial {(keyType.IsRecord ? "record " : "")}struct {keyType.Name}");
-        source.AppendLine("{");
-        source.AppendLine($"    private {keyType.Name}(string key) => Key = key;");
+        var enclosing = keyType.Enclosing.Length == 0
+            ? []
+            : keyType.Enclosing.Split('|');
+
+        for (var depth = 0; depth < enclosing.Length; depth++)
+        {
+            source.AppendLine($"{Pad(depth)}{enclosing[depth]}");
+            source.AppendLine($"{Pad(depth)}{{");
+        }
+
+        var pad = Pad(enclosing.Length);
+
+        source.AppendLine($"{pad}/// <summary>");
+        source.AppendLine($"{pad}/// The body of a vocabulary key: a private constructor and one factory, so a key can only come");
+        source.AppendLine($"{pad}/// from the generated declaration that authors it.");
+        source.AppendLine($"{pad}/// </summary>");
+        source.AppendLine($"{pad}{keyType.Access} readonly partial {(keyType.IsRecord ? "record " : "")}struct {keyType.Name}");
+        source.AppendLine($"{pad}{{");
+        source.AppendLine($"{pad}    private readonly string? _key;");
         source.AppendLine();
-        source.AppendLine("    /// <summary>The dotted key the catalog resolves.</summary>");
-        source.AppendLine("    public string Key { get; }");
+        source.AppendLine($"{pad}    private {keyType.Name}(string key) => _key = key;");
         source.AppendLine();
-        source.AppendLine("    /// <summary>The generated declaration's constructor.</summary>");
-        source.AppendLine($"    public static {keyType.Name} From(string key) => new(key);");
+        source.AppendLine($"{pad}    /// <summary>");
+        source.AppendLine($"{pad}    /// The dotted key the catalog resolves. Computed rather than stored, because a struct is");
+        source.AppendLine($"{pad}    /// always default-constructible and the signature promises no null.");
+        source.AppendLine($"{pad}    /// </summary>");
+        source.AppendLine($"{pad}    public string Key => _key ?? \"\";");
         source.AppendLine();
-        source.AppendLine("    /// <inheritdoc />");
-        source.AppendLine("    public override string ToString() => Key ?? \"\";");
-        source.AppendLine("}");
+        source.AppendLine($"{pad}    /// <summary>The generated declaration's constructor.</summary>");
+        source.AppendLine($"{pad}    public static {keyType.Name} From(string key) => new(key);");
+        source.AppendLine();
+        source.AppendLine($"{pad}    /// <inheritdoc />");
+        source.AppendLine($"{pad}    public override string ToString() => Key;");
+        source.AppendLine($"{pad}}}");
+
+        for (var depth = enclosing.Length - 1; depth >= 0; depth--)
+        {
+            source.AppendLine($"{Pad(depth)}}}");
+        }
 
         production.AddSource(
-            $"{(keyType.Namespace.Length == 0 ? "" : keyType.Namespace + ".")}{keyType.Name}.g.cs",
+            $"{(keyType.Namespace.Length == 0 ? "" : keyType.Namespace + ".")}{keyType.Path}.g.cs",
             SourceText.From(source.ToString(), Encoding.UTF8));
     }
 
@@ -110,16 +174,30 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
             _ => "internal",
         };
 
-    /// <summary>A key type and the little the generator needs to write its body.</summary>
+    /// <summary>One level of nesting, as the emitted source indents it.</summary>
+    private static string Pad(int depth) => new(' ', depth * 4);
+
+    /// <summary>
+    /// A key type and the little the generator needs to write its body.
+    /// <para>
+    /// The enclosing types are carried as delimited strings rather than a collection: the pipeline tells one
+    /// run's inputs from the last's by value, and an array compares by reference.
+    /// </para>
+    /// </summary>
     private readonly struct KeyType : IEquatable<KeyType>
     {
-        public KeyType(string name, string @namespace, bool isPartial, bool isRecord, string access)
+        public KeyType(
+            string name, string @namespace, bool isPartial, bool isRecord, string access, string nesting,
+            string enclosing, string closed)
         {
             Name = name;
             Namespace = @namespace;
             IsPartial = isPartial;
             IsRecord = isRecord;
             Access = access;
+            Nesting = nesting;
+            Enclosing = enclosing;
+            Closed = closed;
         }
 
         public string Name { get; }
@@ -132,13 +210,27 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
 
         public string Access { get; }
 
+        /// <summary>The enclosing type names, outermost first, <c>|</c>-separated. Empty at the top level.</summary>
+        public string Nesting { get; }
+
+        /// <summary>The enclosing declarations to repeat, outermost first, <c>|</c>-separated.</summary>
+        public string Enclosing { get; }
+
+        /// <summary>The first enclosing type that cannot be reopened, or empty when every one can.</summary>
+        public string Closed { get; }
+
+        /// <summary>The type's dotted name below its namespace, which is what makes a hint name unique.</summary>
+        public string Path =>
+            Nesting.Length == 0 ? Name : Nesting.Replace('|', '.') + "." + Name;
+
         public bool Equals(KeyType other) =>
             Name == other.Name && Namespace == other.Namespace && IsPartial == other.IsPartial
-            && IsRecord == other.IsRecord && Access == other.Access;
+            && IsRecord == other.IsRecord && Access == other.Access && Nesting == other.Nesting
+            && Enclosing == other.Enclosing && Closed == other.Closed;
 
         public override bool Equals(object? obj) => obj is KeyType other && Equals(other);
 
         public override int GetHashCode() =>
-            (Name, Namespace, IsPartial, IsRecord, Access).GetHashCode();
+            (Name, Namespace, IsPartial, IsRecord, Access, Nesting, Enclosing, Closed).GetHashCode();
     }
 }

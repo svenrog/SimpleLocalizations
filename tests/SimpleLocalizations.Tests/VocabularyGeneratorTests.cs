@@ -70,6 +70,22 @@ public class VocabularyGeneratorTests
     }
 
     [Fact]
+    public void A_declaration_separated_by_a_semicolon_arrives_truncated()
+    {
+        // Why SL1009 exists, and why it cannot be a Roslyn diagnostic: the metadata reaches here through an
+        // .editorconfig, whose parser reads ';' as the start of a comment. Everything after the first entry
+        // is gone before the generator is handed anything, so the wrong key types are generated and the
+        // build is clean. By the time this component runs there is nothing left to report.
+        var run = Generate(
+            Keys("alpha.one", "detail.two"),
+            Declared("Probe.ProbeKey ; detail=Probe.OtherKey"));
+
+        Assert.Empty(run.Ids);
+        Assert.DoesNotContain("OtherKey", run.OnlySource);
+        Assert.Contains("global::Probe.ProbeKey Two =>", run.OnlySource);
+    }
+
+    [Fact]
     public void A_derived_suffix_is_authored_but_generates_no_member()
     {
         var run = Generate(Keys("alpha.one", "alpha.one.pitch"), Declared(derived: "pitch"));
@@ -195,6 +211,7 @@ public class VocabularyGeneratorTests
     [InlineData("detail=Probe.OtherKey")]
     [InlineData("Probe.ProbeKey | detail")]
     [InlineData("Probe.ProbeKey | a=b=c")]
+    [InlineData("Probe.ProbeKey | detail=Probe.OtherKey | detail=Probe.ProbeKey")]
     public void SL1006_refuses_a_key_type_that_is_not_a_default_followed_by_families(string declaration)
     {
         Assert.Equal(["SL1006"], Generate(Keys("alpha.one"), Declared(declaration)).Ids);
@@ -211,6 +228,53 @@ public class VocabularyGeneratorTests
     public void SL1008_refuses_a_segment_naming_the_class_it_nests_in()
     {
         Assert.Equal(["SL1008"], Generate(Keys("alpha.alpha.one"), Declared()).Ids);
+    }
+
+    [Fact]
+    public void A_refusal_points_at_the_entry_that_caused_it()
+    {
+        // A diagnostic carrying no location cannot be navigated to and cannot be suppressed, and leaves a
+        // reader to find the key in a file that may author hundreds.
+        var run = Generate(Keys("alpha.one", "alpha.two", "Bad.Key"), Declared());
+
+        var location = run.Diagnostics.Single().Location;
+        var lines = location.GetLineSpan();
+
+        Assert.Equal("Vocab.resx", lines.Path);
+        Assert.Equal(Keys("alpha.one", "alpha.two", "Bad.Key").Split('\n')
+            .Select((line, index) => (line, index))
+            .Single(pair => pair.line.Contains("Bad.Key")).index,
+            lines.StartLinePosition.Line);
+    }
+
+    [Fact]
+    public void A_refusal_about_the_file_points_at_the_file()
+    {
+        var run = Generate(Keys(), Declared());
+
+        Assert.Equal("Vocab.resx", run.Diagnostics.Single().Location.GetLineSpan().Path);
+    }
+
+    [Theory]
+    [InlineData("Bad.Key")]
+    [InlineData("alpha.one.two")]
+    [InlineData("alpha.tls-1-0")]
+    public void A_key_that_cannot_be_emitted_costs_itself_and_not_the_file(string refused)
+    {
+        // Refusing the whole vocabulary over one bad key moves the failure to every *other* key's call sites,
+        // as a pile of CS0117 naming no resource file — the cascade SL1004 and SL1005 exist to prevent.
+        var run = Generate(Keys("alpha.one", "alpha.tls10", refused), Declared());
+
+        Assert.NotEmpty(run.Ids);
+        Assert.Contains("One =>", run.OnlySource);
+        Assert.Contains("Tls10 =>", run.OnlySource);
+    }
+
+    [Fact]
+    public void A_vocabulary_whose_every_key_was_refused_does_not_also_report_being_empty()
+    {
+        // The refusals said why. SL1005 would only say that they did.
+        Assert.Equal(["SL1001"], Generate(Keys("Bad.Key"), Declared()).Ids);
     }
 
     [Fact]
@@ -236,5 +300,38 @@ public class VocabularyGeneratorTests
 
         Assert.Empty(run.Ids);
         Assert.Equal(["Vocab.g.cs", "Vocab.sv-SE.g.cs"], run.Sources.Keys.Order());
+    }
+
+    [Fact]
+    public void Two_resources_sharing_a_file_name_are_emitted_under_their_folders()
+    {
+        // A file name is not unique — `Localization/Strings.resx` beside `Shared/Strings.resx` is an ordinary
+        // layout — and a repeated hint name throws inside the generator, which costs every vocabulary in the
+        // project rather than the colliding pair. The build declares the name; this is what it declares.
+        var run = Generate(
+        [
+            ("A/Strings.resx", Keys("alpha.one"),
+                new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.A", Hint: "A.Strings")),
+            ("B/Strings.resx", Keys("beta.two"),
+                new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.B", Hint: "B.Strings")),
+        ]);
+
+        Assert.Empty(run.Ids);
+        Assert.Equal(["A.Strings.g.cs", "B.Strings.g.cs"], run.Sources.Keys.Order());
+    }
+
+    [Fact]
+    public void A_resource_whose_build_declares_no_hint_falls_back_to_its_path()
+    {
+        // Nothing in a build reaches here without the metadata, but the generator is handed AdditionalFiles
+        // and must not throw on the one input it cannot check.
+        var run = Generate(
+        [
+            ("A/Strings.resx", Keys("alpha.one"), new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.A")),
+            ("B/Strings.resx", Keys("beta.two"), new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.B")),
+        ]);
+
+        Assert.Empty(run.Ids);
+        Assert.Equal(["A.Strings.g.cs", "B.Strings.g.cs"], run.Sources.Keys.Order());
     }
 }

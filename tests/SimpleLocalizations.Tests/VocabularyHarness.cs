@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using SimpleLocalizations.Generator;
 using System.Collections.Immutable;
+using System.Text;
 
 namespace SimpleLocalizations.Tests;
 
@@ -20,7 +21,8 @@ internal static class VocabularyHarness
         string KeyType,
         string Namespace,
         string Derived = "",
-        string ResourceName = "");
+        string ResourceName = "",
+        string Hint = "");
 
     /// <summary>What one run produced: every diagnostic, and every file the generator emitted.</summary>
     internal sealed record Run(
@@ -197,31 +199,65 @@ internal static class VocabularyHarness
             SourceText.From(content);
     }
 
-    private sealed class Options(
-        IReadOnlyDictionary<AdditionalText, Declaration> declared) : AnalyzerConfigOptionsProvider
+    /// <summary>
+    /// The declarations as the build actually delivers them: written out as an <c>.editorconfig</c> and read
+    /// back through Roslyn's own parser.
+    /// <para>
+    /// Not a dictionary standing in for one. The transport <em>is</em> the thing under test — a value
+    /// containing <c>;</c> arrives truncated at its first entry because that parser reads the rest of the
+    /// line as a comment, which is the whole reason <c>SL1009</c> exists and cannot be a Roslyn diagnostic. A
+    /// harness that handed the generator a dictionary would prove that on no path a build takes.
+    /// </para>
+    /// </summary>
+    private sealed class Options : AnalyzerConfigOptionsProvider
     {
-        public override AnalyzerConfigOptions GlobalOptions { get; } = Config.Empty;
+        private readonly AnalyzerConfigSet _set;
+
+        public Options(IReadOnlyDictionary<AdditionalText, Declaration> declared)
+        {
+            var config = new StringBuilder("root = true").AppendLine().AppendLine();
+
+            foreach (var (file, declaration) in declared)
+            {
+                config.AppendLine($"[{Section(file)}]");
+
+                foreach (var (name, value) in Metadata(declaration))
+                {
+                    // Omitted rather than written empty, which is what the SDK does with metadata an item
+                    // does not carry.
+                    if (value.Length > 0)
+                    {
+                        config.AppendLine($"build_metadata.AdditionalFiles.{name} = {value}");
+                    }
+                }
+
+                config.AppendLine();
+            }
+
+            _set = AnalyzerConfigSet.Create<ImmutableArray<AnalyzerConfig>>(
+                [AnalyzerConfig.Parse(config.ToString(), "/.editorconfig")]);
+        }
+
+        public override AnalyzerConfigOptions GlobalOptions => Config.Empty;
 
         public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => Config.Empty;
 
-        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile)
-        {
-            if (!declared.TryGetValue(textFile, out var declaration))
-            {
-                return Config.Empty;
-            }
+        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) =>
+            new Config(_set.GetOptionsForSourcePath("/" + Section(textFile)).AnalyzerOptions);
 
-            return new Config(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["build_metadata.AdditionalFiles.VocabularyClass"] = declaration.Class,
-                ["build_metadata.AdditionalFiles.VocabularyKeyType"] = declaration.KeyType,
-                ["build_metadata.AdditionalFiles.VocabularyNamespace"] = declaration.Namespace,
-                ["build_metadata.AdditionalFiles.VocabularyDerived"] = declaration.Derived,
-                ["build_metadata.AdditionalFiles.VocabularyResourceName"] = declaration.ResourceName,
-            });
-        }
+        private static string Section(AdditionalText file) => file.Path.Replace('\\', '/');
 
-        private sealed class Config(Dictionary<string, string> values) : AnalyzerConfigOptions
+        private static IEnumerable<(string Name, string Value)> Metadata(Declaration declaration) =>
+        [
+            ("VocabularyClass", declaration.Class),
+            ("VocabularyKeyType", declaration.KeyType),
+            ("VocabularyNamespace", declaration.Namespace),
+            ("VocabularyDerived", declaration.Derived),
+            ("VocabularyResourceName", declaration.ResourceName),
+            ("_VocabularyHint", declaration.Hint),
+        ];
+
+        private sealed class Config(ImmutableDictionary<string, string> values) : AnalyzerConfigOptions
         {
             public static readonly Config Empty = new([]);
 

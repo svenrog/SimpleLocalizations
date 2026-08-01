@@ -111,4 +111,19 @@ internal static class VocabularyDiagnostics
         _category,
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    /// <summary>
+    /// A key type the generator cannot write <em>into</em>. Its body is emitted as a second declaration of
+    /// the type, which means repeating whatever encloses it: a type that is not <see langword="partial"/>
+    /// cannot be reopened, and a generic one would have to repeat type parameters and their constraints.
+    /// Reported rather than emitted at the wrong nesting, which is a second type that quietly compiles while
+    /// the declared one keeps no body at all.
+    /// </summary>
+    public static readonly DiagnosticDescriptor NotNestable = new(
+        "SL1015",
+        "A vocabulary key type is nested in a type its body cannot be written into",
+        "'{0}' is nested in '{1}', which the generator cannot reopen; an enclosing type must be partial and not generic",
+        _category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

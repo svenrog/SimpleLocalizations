@@ -23,8 +23,8 @@ public class KeyTypeGeneratorTests
         Assert.Empty(run.Ids);
         Assert.Contains("namespace Probe;", run.OnlySource);
         Assert.Contains("public readonly partial struct FindingKey", run.OnlySource);
-        Assert.Contains("private FindingKey(string key) => Key = key;", run.OnlySource);
-        Assert.Contains("public string Key { get; }", run.OnlySource);
+        Assert.Contains("private FindingKey(string key) => _key = key;", run.OnlySource);
+        Assert.Contains("public string Key => _key ?? \"\";", run.OnlySource);
         Assert.Contains("public static FindingKey From(string key) => new(key);", run.OnlySource);
     }
 
@@ -91,6 +91,79 @@ public class KeyTypeGeneratorTests
             """);
 
         Assert.Equal(["SL1013"], run.Ids);
+        Assert.Empty(run.Sources);
+    }
+
+    [Fact]
+    public void A_nested_key_type_is_written_where_it_was_declared()
+    {
+        // Emitting the body at the namespace's own level declares a second, unrelated type: it compiles, and
+        // the type that was declared keeps no body at all, so every call site fails naming neither.
+        var run = GenerateKeyTypes("""
+            using SimpleLocalizations;
+
+            namespace Probe;
+
+            public static partial class Vocabulary
+            {
+                [VocabularyKey]
+                public readonly partial struct FindingKey;
+            }
+            """);
+
+        Assert.Empty(run.Ids);
+        Assert.Equal(["Probe.Vocabulary.FindingKey.g.cs"], run.Sources.Keys);
+        Assert.Contains("public static partial class Vocabulary", run.OnlySource);
+        Assert.Contains("    public readonly partial struct FindingKey", run.OnlySource);
+        Assert.Contains("        public static FindingKey From(string key) => new(key);", run.OnlySource);
+    }
+
+    [Fact]
+    public void A_nested_key_type_compiles_against_its_own_declaration()
+    {
+        // The emitted halves have to meet: same nesting, same modifiers, one type.
+        var errors = Compile(
+            [],
+            """
+            using SimpleLocalizations;
+
+            namespace Probe;
+
+            public static partial class Vocabulary
+            {
+                [VocabularyKey]
+                public readonly partial record struct FindingKey;
+            }
+
+            public static class Caller
+            {
+                public static string Read(Vocabulary.FindingKey key) => key.Key;
+            }
+            """)
+            .Where(diagnostic => diagnostic.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
+            .Select(diagnostic => diagnostic.ToString());
+
+        Assert.Empty(errors);
+    }
+
+    [Theory]
+    [InlineData("public static class Vocabulary")]
+    [InlineData("public partial class Vocabulary<T>")]
+    public void SL1015_refuses_a_key_type_nested_in_a_type_that_cannot_be_reopened(string enclosing)
+    {
+        var run = GenerateKeyTypes($$"""
+            using SimpleLocalizations;
+
+            namespace Probe;
+
+            {{enclosing}}
+            {
+                [VocabularyKey]
+                public readonly partial struct FindingKey;
+            }
+            """);
+
+        Assert.Equal(["SL1015"], run.Ids);
         Assert.Empty(run.Sources);
     }
 

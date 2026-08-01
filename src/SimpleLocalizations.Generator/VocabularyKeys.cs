@@ -43,12 +43,22 @@ internal static class VocabularyKeys
     /// <para>
     /// Lowercased whichever it is, because a key is lowercase wherever it is authored.
     /// </para>
+    /// <para>
+    /// <b>Public</b> whichever it is, too: a set is what it exposes, and a member nothing outside the type
+    /// can name is not one a read edge composes a key from. Without that, a private constant holding a magic
+    /// string — an implementation detail on the same type — demanded words authored for it.
+    /// </para>
     /// </summary>
     public static IEnumerable<(string Name, string Word, ImmutableArray<Location> Locations)> Members(
         INamedTypeSymbol type)
     {
         foreach (var member in type.GetMembers())
         {
+            if (member.DeclaredAccessibility != Accessibility.Public)
+            {
+                continue;
+            }
+
             var word = Spelling(member, type);
 
             if (word is not null)

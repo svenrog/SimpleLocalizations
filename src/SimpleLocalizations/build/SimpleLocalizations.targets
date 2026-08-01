@@ -20,6 +20,12 @@
       <!-- TrimEnd: a resource at the project root contributes no folder, and `Ns.` is not a namespace. -->
       <VocabularyNamespace Condition="'%(VocabularyNamespace)' == ''">$([System.String]::Copy('$(RootNamespace).%(_VocabularyFolder)').TrimEnd('.'))</VocabularyNamespace>
       <VocabularyResourceName Condition="'%(VocabularyResourceName)' == ''">$(RootNamespace).%(_VocabularyFolder)%(Filename)</VocabularyResourceName>
+      <!-- What the generated file is called. The folder is part of it because two resources may share a file
+           name — `Localization/Strings.resx` beside `Shared/Strings.resx` — and a repeated hint name throws
+           inside the generator, which costs the whole project's vocabularies rather than the colliding pair.
+           Project-relative rather than the full path the generator can see for itself: a hint name reaches
+           the PDB, and an absolute one would differ between two machines building the same commit. -->
+      <_VocabularyHint>%(_VocabularyFolder)%(Filename)</_VocabularyHint>
     </VocabularyResource>
   </ItemGroup>
 
@@ -31,6 +37,7 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyNamespace" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyDerived" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="VocabularyResourceName" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="_VocabularyHint" />
   </ItemGroup>
 
   <!-- SL1009 has to be checked here rather than in the generator, because by the time the generator runs the

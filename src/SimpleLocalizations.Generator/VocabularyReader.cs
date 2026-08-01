@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.Text;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -21,7 +22,9 @@ internal static class VocabularyReader
         XDocument document;
         try
         {
-            document = XDocument.Parse(resx);
+            // SetLineInfo so a diagnostic about an entry can point at it. Without it every refusal names a
+            // key and leaves a reader to find it, and none of them can be navigated to or suppressed.
+            document = XDocument.Parse(resx, LoadOptions.SetLineInfo);
         }
         catch (XmlException)
         {
@@ -41,10 +44,28 @@ internal static class VocabularyReader
                 .Select(data => (
                     Name: data.Attribute("name")?.Value,
                     Comment: data.Element("comment")?.Value,
-                    Words: data.Element("value")?.Value))
+                    Words: data.Element("value")?.Value,
+                    Span: Span(data)))
                 .Where(entry => !string.IsNullOrEmpty(entry.Name))
-                .Select(entry => new VocabularyEntry(entry.Name!, Trim(entry.Comment), entry.Words ?? "")),
+                .Select(entry =>
+                    new VocabularyEntry(entry.Name!, Trim(entry.Comment), entry.Words ?? "", entry.Span)),
         ];
+    }
+
+    /// <summary>
+    /// Where <paramref name="data"/> is, spanning the element's own name. LINQ-to-XML reports one-based
+    /// line and column, and a column pointing at the first character after the <c>&lt;</c>.
+    /// </summary>
+    private static LinePositionSpan Span(XElement data)
+    {
+        if (data is not IXmlLineInfo line || !line.HasLineInfo())
+        {
+            return default;
+        }
+
+        var start = new LinePosition(line.LineNumber - 1, line.LinePosition - 1);
+
+        return new LinePositionSpan(start, new LinePosition(start.Line, start.Character + "data".Length));
     }
 
     /// <summary>A note is prose over one or more lines; the generated XmlDoc wants it without the resx's indent.</summary>

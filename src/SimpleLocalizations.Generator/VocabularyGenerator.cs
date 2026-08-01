@@ -59,42 +59,52 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             return null;
         }
 
+        var hint = VocabularyMetadata.Read(options, file, VocabularyMetadata.Hint);
+
         return new Vocabulary(
+            file.Path,
             Path.GetFileName(file.Path),
             file.GetText(token)?.ToString() ?? "",
             className,
             VocabularyMetadata.Read(options, file, VocabularyMetadata.KeyType),
             VocabularyMetadata.Read(options, file, VocabularyMetadata.Namespace),
             VocabularyMetadata.Read(options, file, VocabularyMetadata.Derived),
-            VocabularyMetadata.Read(options, file, VocabularyMetadata.ResourceName));
+            VocabularyMetadata.Read(options, file, VocabularyMetadata.ResourceName),
+            hint.Length > 0 ? hint : Flatten(file.Path));
     }
 
     private static void Produce(SourceProductionContext production, Vocabulary vocabulary)
     {
+        var file = VocabularyLocations.Of(vocabulary.Path);
+
         if (string.IsNullOrWhiteSpace(vocabulary.KeyType) || string.IsNullOrWhiteSpace(vocabulary.Namespace))
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Undeclared, Location.None, vocabulary.FileName));
+                VocabularyDiagnostics.Undeclared, file, vocabulary.FileName));
             return;
         }
 
         if (VocabularyKeyTypes.Parse(vocabulary.KeyType) is not { } keyTypes)
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.KeyTypeMalformed, Location.None, vocabulary.FileName, vocabulary.KeyType));
+                VocabularyDiagnostics.KeyTypeMalformed, file, vocabulary.FileName, vocabulary.KeyType));
             return;
         }
 
         if (VocabularyReader.Read(vocabulary.Resx) is not { } entries)
         {
             production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Unreadable, Location.None, vocabulary.FileName));
+                VocabularyDiagnostics.Unreadable, file, vocabulary.FileName));
             return;
         }
 
+        var text = SourceText.From(vocabulary.Resx);
+        Location At(VocabularyEntry? entry) =>
+            entry is null ? file : VocabularyLocations.Of(vocabulary.Path, text, entry.Span);
+
         var derived = Derived(vocabulary.Derived);
         var root = VocabularyNode.Root();
-        var declared = true;
+        var refused = false;
 
         foreach (var entry in entries)
         {
@@ -108,39 +118,42 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             if (!_wellFormed.IsMatch(entry.Key))
             {
                 production.ReportDiagnostic(Diagnostic.Create(
-                    VocabularyDiagnostics.Malformed, Location.None, entry.Key, vocabulary.FileName));
-                declared = false;
+                    VocabularyDiagnostics.Malformed, At(entry), entry.Key, vocabulary.FileName));
+                refused = true;
                 continue;
             }
 
             if (root.Add(entry) is { } taken)
             {
+                // The key named is the one already filed; where it is a branch it authors nothing of its own,
+                // so the entry that collided with it is the nearest thing in the file to point at.
                 production.ReportDiagnostic(Diagnostic.Create(
-                    VocabularyDiagnostics.Nested, Location.None, taken.Path, vocabulary.FileName));
-                declared = false;
+                    VocabularyDiagnostics.Nested, At(taken.Entry ?? entry), taken.Path, vocabulary.FileName));
+                refused = true;
             }
         }
 
-        if (!declared)
-        {
-            return;
-        }
+        // A key nothing can emit costs itself, never the file. Refusing the whole vocabulary over one bad key
+        // moves the failure to every *other* key's call sites as a pile of CS0117 naming no resource file —
+        // which is the cascade SL1004 and SL1005 exist to keep out of a consumer's build.
+        refused |= VocabularyCollisions.Prune(
+            root, vocabulary.ClassName, vocabulary.FileName, At, production.ReportDiagnostic);
 
         if (root.Children.Count == 0)
         {
-            production.ReportDiagnostic(Diagnostic.Create(
-                VocabularyDiagnostics.Empty, Location.None, vocabulary.FileName));
-            return;
-        }
+            // Silent where every key was refused one by one: those diagnostics said why, and this one would
+            // only say that they did.
+            if (!refused)
+            {
+                production.ReportDiagnostic(Diagnostic.Create(
+                    VocabularyDiagnostics.Empty, file, vocabulary.FileName));
+            }
 
-        if (VocabularyCollisions.Check(
-            root, vocabulary.ClassName, vocabulary.FileName, production.ReportDiagnostic))
-        {
             return;
         }
 
         production.AddSource(
-            HintName(vocabulary.FileName),
+            vocabulary.Hint + ".g.cs",
             SourceText.From(
                 VocabularyEmitter.Emit(
                     root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName),
@@ -148,12 +161,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// What the generated file is called. Named after the resource file rather than the class it declares: two
-    /// items can carry one <c>VocabularyClass</c> — a glob catching a culture file is the way in — and a
-    /// repeated hint name crashes the generator instead of reporting anything.
+    /// A resource's path as a hint name, for a build that declared none. Named after the file rather than the
+    /// class it declares, because two items can carry one <c>VocabularyClass</c> — a glob catching a culture
+    /// file is the way in — and after the <em>whole</em> path rather than the file name, because two folders
+    /// can carry one file name. A repeated hint name throws inside the generator, which costs every
+    /// vocabulary in the project rather than the colliding pair.
     /// </summary>
-    private static string HintName(string fileName) =>
-        Path.GetFileNameWithoutExtension(fileName) + ".g.cs";
+    private static string Flatten(string path) =>
+        string.Concat(
+            Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path))
+                .Select(character => character is '\\' or '/' or ':' ? '.' : character))
+            .Trim('.');
 
     /// <summary>
     /// The suffixes the read edge appends to another key — a finding's supporting text, a signal's pitch.
@@ -176,9 +194,10 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     private readonly struct Vocabulary : IEquatable<Vocabulary>
     {
         public Vocabulary(
-            string fileName, string resx, string className, string keyType, string @namespace, string derived,
-            string resourceName)
+            string path, string fileName, string resx, string className, string keyType, string @namespace,
+            string derived, string resourceName, string hint)
         {
+            Path = path;
             FileName = fileName;
             Resx = resx;
             ClassName = className;
@@ -186,8 +205,13 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             Namespace = @namespace;
             Derived = derived;
             ResourceName = resourceName;
+            Hint = hint;
         }
 
+        /// <summary>Where the resource is, which is where a diagnostic about it points.</summary>
+        public string Path { get; }
+
+        /// <summary>What the resource is called, which is how a message names it.</summary>
         public string FileName { get; }
 
         public string Resx { get; }
@@ -202,14 +226,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
         public string ResourceName { get; }
 
+        /// <summary>What the generated file is called, without its extension.</summary>
+        public string Hint { get; }
+
         public bool Equals(Vocabulary other) =>
-            FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
+            Path == other.Path && FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
             && KeyType == other.KeyType && Namespace == other.Namespace && Derived == other.Derived
-            && ResourceName == other.ResourceName;
+            && ResourceName == other.ResourceName && Hint == other.Hint;
 
         public override bool Equals(object? obj) => obj is Vocabulary other && Equals(other);
 
         public override int GetHashCode() =>
-            (FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName).GetHashCode();
+            (Path, FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName, Hint).GetHashCode();
     }
 }

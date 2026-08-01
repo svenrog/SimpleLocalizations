@@ -62,4 +62,49 @@ public class ListFormatterTests
         Assert.Equal("a, b, +2 more", InCulture("en-US", () => ListFormatter.Truncated(["a", "b", "c", "d"], 2)));
         Assert.Equal("a, b, +2 till", InCulture("sv-SE", () => ListFormatter.Truncated(["a", "b", "c", "d"], 2)));
     }
+
+    [Fact]
+    public void A_supplied_catalog_is_the_one_read()
+    {
+        // The shipped patterns are this package's own resource set, which a consumer cannot add a satellite
+        // to. Passing a catalog is how a culture it ships none for gets its grammar.
+        var patterns = new TextCultures("de-DE").Catalog(
+            "SimpleLocalizations.Tests.ListPatternsFixture", typeof(ListFormatterTests).Assembly);
+
+        Assert.Equal("a, b und c", InCulture("de-DE", () => ListFormatter.And(["a", "b", "c"], patterns)));
+        Assert.Equal("a oder b", InCulture("de-DE", () => ListFormatter.Or(["a", "b"], patterns)));
+        Assert.Equal(
+            "a; b und 2 weitere",
+            InCulture("de-DE", () => ListFormatter.Truncated(["a", "b", "c", "d"], 2, patterns)));
+    }
+
+    [Fact]
+    public void The_shipped_patterns_are_read_where_no_catalog_is_supplied()
+    {
+        Assert.Equal("a, b, and c", InCulture("en-US", () => ListFormatter.And(["a", "b", "c"])));
+    }
+
+    [Fact]
+    public void Every_pattern_a_supplied_catalog_owes_is_named()
+    {
+        // The contract a consumer's parity test reads. A key added to the package without one added here
+        // would throw in someone else's build.
+        var shipped = new TextCultures("en-US").Catalog(
+            "SimpleLocalizations.ListPatterns", typeof(ListFormatter).Assembly);
+
+        Assert.All(ListFormatter.Patterns, key => Assert.True(shipped.TryGet(key, out _), key));
+        Assert.Equal(
+            [.. ListFormatter.Patterns.Order()],
+            [.. shipped.AuthoredKeys(CultureInfo.GetCultureInfo("en-US")).Order()]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void A_cap_that_names_nothing_is_refused(int max)
+    {
+        // It rendered as a separator with no item before it — ", +2 more" — which reads as a formatting bug
+        // in the sentence around it rather than as the caller's arithmetic.
+        Assert.Throws<ArgumentOutOfRangeException>(() => ListFormatter.Truncated(["a", "b"], max));
+    }
 }

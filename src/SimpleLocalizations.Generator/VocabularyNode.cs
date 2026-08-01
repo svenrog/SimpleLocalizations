@@ -28,10 +28,23 @@ internal sealed class VocabularyNode
     /// <summary>The authored key, when this node is a leaf.</summary>
     public VocabularyEntry? Entry { get; private set; }
 
+    /// <summary>
+    /// The first entry at or below this node. A branch authors no key of its own, so a diagnostic about one
+    /// points at the first key it holds — the nearest thing in the file to the family being complained about.
+    /// </summary>
+    public VocabularyEntry? FirstEntry =>
+        Entry ?? _children.Values.Select(child => child.FirstEntry).FirstOrDefault(entry => entry is not null);
+
     /// <summary>The nodes filed under this one, ordered by segment so the emitted source is stable.</summary>
     public IReadOnlyCollection<VocabularyNode> Children => _children.Values;
 
     public static VocabularyNode Root() => new("", "");
+
+    /// <summary>
+    /// Drops <paramref name="child"/>, which is how a key that cannot be emitted stops costing the keys that
+    /// can. Everything filed under it goes with it, and the diagnostic that asked for this names it.
+    /// </summary>
+    public void Remove(VocabularyNode child) => _children.Remove(child.Segment);
 
     /// <summary>
     /// Files <paramref name="entry"/> under its segments. Returns the node that was already taken, when the

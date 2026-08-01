@@ -47,6 +47,34 @@ public class TextCulturesTests
         Assert.Equal("en-US", _cultures.Negotiate(null).Name);
     }
 
+    [Theory]
+    [InlineData("sv", "sv-SE")]
+    [InlineData("SV", "sv-SE")]
+    [InlineData("sv-FI", "sv-SE")]
+    [InlineData("en", "en-US")]
+    [InlineData("en-AU", "en-US")]
+    public void A_preference_reaches_a_culture_sharing_its_language(string preference, string expected)
+    {
+        // A browser sends the bare language more often than not. Refusing it answered a reader who asked for
+        // Swedish in English, while holding Swedish.
+        Assert.Equal(expected, _cultures.Negotiate([preference]).Name);
+    }
+
+    [Fact]
+    public void A_near_first_preference_outranks_an_exact_second()
+    {
+        // The order is the reader's ranking, so each preference is tried both ways before the next is tried
+        // at all: sv-SE is what "Swedish, or failing that British English" asked for.
+        Assert.Equal("sv-SE", _cultures.Negotiate(["sv", "en-GB"]).Name);
+    }
+
+    [Fact]
+    public void An_explicit_request_still_refuses_what_it_was_not_given()
+    {
+        // Negotiate reads wishes; TryResolve reads an instruction, and stays exact.
+        Assert.False(_cultures.TryResolve("sv", out _));
+    }
+
     [Fact]
     public void Applying_a_culture_leaves_the_formatting_axis_alone()
     {

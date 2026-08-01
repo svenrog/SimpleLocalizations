@@ -47,7 +47,7 @@ too.
 
 ## Diagnostics
 
-Ids `SL1001`–`SL1014`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
+Ids `SL1001`–`SL1015`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
 through its own strictness. The set and what each refuses is the table in `docs/diagnostics.md`, which is the
 one statement of it; `AnalyzerReleases.Unshipped.md` is the tracked form `RS2008` requires.
 
@@ -57,10 +57,13 @@ Ids are a public commitment. A new rule takes the next free id and never reuses 
 
 `tests/SimpleLocalizations.Tests`, xUnit v3, `dotnet test`.
 
-`VocabularyHarness` drives a real `CSharpCompilation` — resources as `AdditionalFiles`, the declaration as
-analyzer-config metadata — rather than using `Microsoft.CodeAnalysis.Testing`. Deliberate: the inputs here
-are exactly those two things, driving the compiler directly is less machinery, and the metadata goes through
-the same parser that drops a `;`. A harness that stubbed the metadata would test a path no build takes.
+`VocabularyHarness` drives a real `CSharpCompilation` — resources as `AdditionalFiles`, the declaration
+written out as an `.editorconfig` and read back through Roslyn's own `AnalyzerConfigSet` — rather than using
+`Microsoft.CodeAnalysis.Testing`. Deliberate: the inputs here are exactly those two things, driving the
+compiler directly is less machinery, and the metadata goes through the same parser that drops a `;`. A
+harness that handed the generator a dictionary would test a path no build takes, and the truncation is the
+one thing most worth proving. What is still assumed is the MSBuild half — `SL1009` firing — which no xUnit
+test reaches.
 
 Every diagnostic has a case that fires it and, where the rule has an off switch or a scope, a case proving it
 stays silent. A rule with only a positive case passes when it fires on everything.

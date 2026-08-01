@@ -25,6 +25,10 @@ A key is always a **struct** — the attribute goes nowhere else — and the gen
 declaration says, so `partial struct` and `partial record struct` both work. Forget the `partial` and
 `SL1013` says so.
 
+Nesting one inside a holder type works too, as long as the holder is `partial` and not generic — the body is
+written where the type was declared, so the generator has to reopen whatever encloses it. `SL1015` says so
+when it cannot.
+
 ## Using it
 
 Name the type on the resource:
@@ -85,7 +89,9 @@ A closed set gets written three ways, so `[VocabularyFamily]` reads all three:
 | A constant | its **value** — a value is why it is a constant and not an enum, so `Https = "http-s"` needs `http-s` |
 | A `static readonly` field or property of the declaring type | its name — the type-safe enum a class reaches for when a member needs behaviour |
 
-Lowercased whichever it is. Anything else — a helper property, an unrelated constant — is not a member.
+Lowercased whichever it is, and **public** whichever it is: a set is what it exposes, so a private or
+internal constant on the same type is an implementation detail rather than a member. Anything else — a helper
+property, an unrelated constant — is not a member either.
 
 `SL1014` refuses a `[VocabularyFamily]` type that enumerates none of these. A set that checks nothing looks
 exactly like a set whose every member is authored.

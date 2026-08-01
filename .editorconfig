@@ -1,4 +1,23 @@
-﻿[*.cs]
+﻿# root: nothing above this directory contributes, so a checkout under an unrelated tree is styled the same.
+root = true
+
+# Line endings are deliberately absent: .gitattributes normalizes them with `* text=auto`, so pinning one
+# here would fight the native checkout rather than settle anything.
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{md,yml,yaml,json,resx,csproj,props,targets,slnx}]
+indent_size = 2
+
+[*.md]
+# Two trailing spaces are a hard line break in markdown.
+trim_trailing_whitespace = false
+
+[*.cs]
 
 # CA1873: Avoid potentially expensive logging
 dotnet_diagnostic.CA1873.severity = none

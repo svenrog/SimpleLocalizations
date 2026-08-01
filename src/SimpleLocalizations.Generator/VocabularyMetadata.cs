@@ -17,6 +17,12 @@ internal static class VocabularyMetadata
     public const string ResourceName = "build_metadata.AdditionalFiles.VocabularyResourceName";
 
     /// <summary>
+    /// What the generated file is named, project-relative. Underscored because it is the build's to compute
+    /// and not a consumer's to declare: what it settles is a file name nothing reads.
+    /// </summary>
+    public const string Hint = "build_metadata.AdditionalFiles._VocabularyHint";
+
+    /// <summary>
     /// The value of <paramref name="name"/> on <paramref name="file"/>, or empty when it carries none.
     /// </summary>
     public static string Read(AnalyzerConfigOptionsProvider options, AdditionalText file, string name) =>
