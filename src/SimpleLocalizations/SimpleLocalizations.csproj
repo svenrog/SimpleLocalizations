@@ -10,6 +10,7 @@
     <PackageId>SimpleLocalizations</PackageId>
     <Description>Localized text whose identity is stored: a .resx generates the typed keys its producers name, and an analyzer keeps the vocabulary closed, so a key renamed in the resource moves its callers and no call site can invent one.</Description>
     <PackageTags>localization;resx;source-generator;analyzer;i18n</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
     <!-- One package, two assemblies. A consumer references this and the generator attaches itself, because
          the targets below ship inside the package and a package's build/ is imported into every referencing
          project — which is what keeps the analyzer half unconditional while the generator's inputs stay
@@ -29,6 +30,10 @@
     <None Include="build/SimpleLocalizations.targets" Pack="true" PackagePath="build/" />
     <None Include="../../LICENSE.txt" Pack="true" PackagePath="/" />
     <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <!-- The icon is third-party under a license of its own, so the notice ships with the package that
+         redistributes it rather than only with the repository. -->
+    <None Include="../../icon.png" Pack="true" PackagePath="/" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <!-- GetTargetPath rather than ResolveProjectReferences: it answers where the output is without invoking

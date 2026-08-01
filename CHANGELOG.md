@@ -4,6 +4,9 @@ All notable changes to this project are documented here.
 
 ## Unreleased
 
+- The package ships an icon, and the notice for it: the globe emoji from Google's Noto Emoji, Apache-2.0,
+  documented in `THIRD-PARTY-NOTICES.md`.
+
 ### Breaking
 
 - `TextKey` is now `LocalizationKey` — the name a consumer is most likely to have taken already, and so the

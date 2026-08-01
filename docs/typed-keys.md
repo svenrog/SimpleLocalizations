@@ -15,6 +15,10 @@ would open it again silently:
 public readonly partial record struct FindingKey;
 ```
 
+A key is a **struct** — the attribute goes nowhere else — and the generator repeats whatever the declaration
+says, so a plain `partial struct` and a `partial record struct` both work. `SL1013` catches the missing
+`partial`.
+
 ```xml
 <VocabularyResource Include="Localization/SecurityStrings.resx"
                     VocabularyClass="SecurityKeys"
@@ -26,8 +30,15 @@ var stored = catalog.Neutral(SecurityKeys.Cookies.Insecure.Key);   // what you p
 var shown  = catalog.Get(SecurityKeys.Cookies.Insecure.Key);       // what this reader sees
 ```
 
-One resource can produce several kinds at once — `VocabularyKeyType="MyApp.LocalizationKey | finding=MyApp.FindingKey"`
-gives the `finding.*` family one type and everything else another.
+The `.Key` is the string the catalog resolves, and a declared type is where you spell it: `StringCatalog`
+overloads a `string` and the shipped `LocalizationKey`, and nothing else — a catalog that took every key type
+would be the very substitution a declared type exists to refuse. Keys of the default type pass whole
+(`catalog.Get(StringsKeys.Greeting)`).
+
+One resource can produce several kinds at once —
+`VocabularyKeyType="SimpleLocalizations.LocalizationKey | finding=MyApp.FindingKey"` gives the `finding.*`
+family one type and everything else another. A family is matched on a key's **first segment**, so the entry
+names that segment and nothing deeper.
 
 ## The set a key is filed under
 
@@ -66,8 +77,9 @@ nothing groups — authors keys with no dot and emits members straight onto its 
 ```
 
 ```csharp
-catalog.Get(ConsoleKeys.Greeting.Key)
+catalog.Get(ConsoleKeys.Greeting)
 ```
 
 Flat and nested keys can share one resource. A key type that claims `Families` still needs one, because a
-flat key names no member of the set — but that is `SL1012` saying so, not a rule about key shape.
+flat key is its own first segment and so names no member of the set — but that is `SL1012` saying so, not a
+rule about key shape.

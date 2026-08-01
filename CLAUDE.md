@@ -65,6 +65,10 @@ the same parser that drops a `;`. A harness that stubbed the metadata would test
 Every diagnostic has a case that fires it and, where the rule has an off switch or a scope, a case proving it
 stays silent. A rule with only a positive case passes when it fires on everything.
 
+The call sites `README.md` and `docs/` show are compiled by `DocumentedExamplesTests`, through generator and
+C# compiler both — a rename reaches code and leaves prose reading exactly as it did, so an example that stops
+compiling has to fail here. An example added to the documentation is added there too.
+
 ## Code style
 
 Mirrors Overlode and SimpleCrawler (`.editorconfig`, `TreatWarningsAsErrors`):

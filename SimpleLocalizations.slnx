@@ -5,8 +5,9 @@
     <File Path="CLAUDE.md" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
+    <File Path="THIRD-PARTY-NOTICES.md" />
   </Folder>
-  <Folder Name="/Solution Items/docs/">
+  <Folder Name="/docs/">
     <File Path="docs/declaring-a-vocabulary.md" />
     <File Path="docs/diagnostics.md" />
     <File Path="docs/scope.md" />

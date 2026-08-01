@@ -66,6 +66,12 @@ That is the whole of the simple path.
 - [Scope](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/scope.md) — what this package
   deliberately leaves to you, and why it ships a list formatter.
 
+## Icon
+
+The package icon is the ["globe showing Europe-Africa" emoji](https://github.com/googlefonts/noto-emoji) from
+Google's Noto Emoji, used unmodified under the Apache License 2.0. It is licensed separately from the source
+code above — see [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
+
 ## Package maintainer
 
 https://github.com/svenrog
