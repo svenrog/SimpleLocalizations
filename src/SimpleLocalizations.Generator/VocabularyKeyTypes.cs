@@ -5,9 +5,10 @@ namespace SimpleLocalizations.Generator;
 /// </summary>
 internal sealed class VocabularyKeyTypes
 {
-    private readonly IReadOnlyDictionary<string, string> _byFamily;
+    /// <summary>Concrete rather than the interface, whose enumerator <see cref="For"/> would box per key.</summary>
+    private readonly Dictionary<string, string> _byFamily;
 
-    private VocabularyKeyTypes(string fallback, IReadOnlyDictionary<string, string> byFamily)
+    private VocabularyKeyTypes(string fallback, Dictionary<string, string> byFamily)
     {
         Fallback = fallback;
         _byFamily = byFamily;
@@ -19,8 +20,20 @@ internal sealed class VocabularyKeyTypes
     /// <summary>The type <paramref name="key"/>'s family produces, matched on its first segment.</summary>
     public string For(string key)
     {
-        var family = key.Split('.')[0];
-        return _byFamily.TryGetValue(family, out var type) ? type : Fallback;
+        // Compared where it lies rather than cut out of the key: a declaration names a handful of families,
+        // this is asked once per key, and a segment materialized to be looked up is a string per key.
+        var dot = key.IndexOf('.');
+        var length = dot < 0 ? key.Length : dot;
+
+        foreach (var family in _byFamily)
+        {
+            if (family.Key.Length == length && string.CompareOrdinal(key, 0, family.Key, 0, length) == 0)
+            {
+                return family.Value;
+            }
+        }
+
+        return Fallback;
     }
 
     /// <summary>

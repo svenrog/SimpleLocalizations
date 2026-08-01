@@ -10,8 +10,11 @@ namespace SimpleLocalizations.Generator;
 /// </summary>
 internal sealed class VocabularyNode
 {
-    private readonly SortedDictionary<string, VocabularyNode> _children =
-        new(StringComparer.Ordinal);
+    /// <summary>
+    /// Filed on the first child rather than in the constructor. Most of a vocabulary is leaves, and a leaf
+    /// never takes one — a key that is a proper prefix of another is reported rather than nested.
+    /// </summary>
+    private SortedDictionary<string, VocabularyNode>? _children;
 
     private VocabularyNode(string segment, string path)
     {
@@ -33,10 +36,10 @@ internal sealed class VocabularyNode
     /// points at the first key it holds — the nearest thing in the file to the family being complained about.
     /// </summary>
     public VocabularyEntry? FirstEntry =>
-        Entry ?? _children.Values.Select(child => child.FirstEntry).FirstOrDefault(entry => entry is not null);
+        Entry ?? Children.Select(child => child.FirstEntry).FirstOrDefault(entry => entry is not null);
 
     /// <summary>The nodes filed under this one, ordered by segment so the emitted source is stable.</summary>
-    public IReadOnlyCollection<VocabularyNode> Children => _children.Values;
+    public IReadOnlyCollection<VocabularyNode> Children => _children is null ? [] : _children.Values;
 
     public static VocabularyNode Root() => new("", "");
 
@@ -44,7 +47,7 @@ internal sealed class VocabularyNode
     /// Drops <paramref name="child"/>, which is how a key that cannot be emitted stops costing the keys that
     /// can. Everything filed under it goes with it, and the diagnostic that asked for this names it.
     /// </summary>
-    public void Remove(VocabularyNode child) => _children.Remove(child.Segment);
+    public void Remove(VocabularyNode child) => _children?.Remove(child.Segment);
 
     /// <summary>
     /// Files <paramref name="entry"/> under its segments. Returns the node that was already taken, when the
@@ -61,16 +64,17 @@ internal sealed class VocabularyNode
                 return node;
             }
 
-            if (!node._children.TryGetValue(segment, out var child))
+            if (node._children is null || !node._children.TryGetValue(segment, out var child))
             {
                 child = new VocabularyNode(segment, node.Path.Length == 0 ? segment : node.Path + "." + segment);
-                node._children.Add(segment, child);
+                (node._children ??= new SortedDictionary<string, VocabularyNode>(StringComparer.Ordinal))
+                    .Add(segment, child);
             }
 
             node = child;
         }
 
-        if (node.Entry is not null || node._children.Count > 0)
+        if (node.Entry is not null || node._children is { Count: > 0 })
         {
             return node;
         }

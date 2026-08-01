@@ -110,6 +110,22 @@ internal static class VocabularyHarness
     }
 
     /// <summary>
+    /// An analyzer over several files rather than one. Whether a tree is generated is a property of that
+    /// tree, so a rule that exempts generated code can only be asked about it across more than one file — a
+    /// vocabulary and the key type it names are never the same file.
+    /// </summary>
+    public static ImmutableArray<Diagnostic> AnalyzeFiles(DiagnosticAnalyzer analyzer, params string[] sources)
+    {
+        var files = Files([]);
+
+        return Compile(sources)
+            .WithAnalyzers([analyzer], new AnalyzerOptions(files.Texts, files.Options))
+            .GetAnalyzerDiagnosticsAsync()
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    /// <summary>
     /// An analyzer over a compilation the caller already holds, for the tests that measure what analysing
     /// costs: building a compilation dwarfs running a rule over it, so a measurement that included it would
     /// be a measurement of Roslyn.
@@ -179,7 +195,7 @@ internal static class VocabularyHarness
     public static string Keys(params string[] keys) =>
         Resx([.. keys.Select(key => (key, "words", (string?)null))]);
 
-    private static CSharpCompilation Compile(string source)
+    private static CSharpCompilation Compile(params string[] sources)
     {
         var references = AppDomain.CurrentDomain
             .GetAssemblies()
@@ -191,7 +207,7 @@ internal static class VocabularyHarness
 
         return CSharpCompilation.Create(
             "Probe",
-            source.Length == 0 ? [] : [CSharpSyntaxTree.ParseText(source)],
+            [.. sources.Where(source => source.Length > 0).Select(source => CSharpSyntaxTree.ParseText(source))],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }

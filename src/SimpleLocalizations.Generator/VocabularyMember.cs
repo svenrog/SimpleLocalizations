@@ -20,10 +20,7 @@ internal static class VocabularyMember
     /// </summary>
     internal static string Name(string segment)
     {
-        var name = string.Concat(segment
-            .Split('-', '_')
-            .Where(part => part.Length > 0)
-            .Select(part => char.ToUpperInvariant(part[0]) + part.Substring(1)));
+        var name = Cased(segment);
 
         if (name.Length == 0 || char.IsDigit(name[0]))
         {
@@ -31,5 +28,32 @@ internal static class VocabularyMember
         }
 
         return _reserved.Contains(name) ? name + "Key" : name;
+    }
+
+    /// <summary>
+    /// <paramref name="segment"/>'s parts run together with the first letter of each uppercased, a part being
+    /// what lies between its hyphens and underscores. Written in one pass rather than as a split and a join:
+    /// this is called once per node by the emitter and again by the collision walk, and every key in a
+    /// resource is a node.
+    /// </summary>
+    private static string Cased(string segment)
+    {
+        var name = new char[segment.Length];
+        var length = 0;
+        var starting = true;
+
+        foreach (var character in segment)
+        {
+            if (character is '-' or '_')
+            {
+                starting = true;
+                continue;
+            }
+
+            name[length++] = starting ? char.ToUpperInvariant(character) : character;
+            starting = false;
+        }
+
+        return new string(name, 0, length);
     }
 }
