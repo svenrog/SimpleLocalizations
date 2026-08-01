@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using SimpleLocalizations.Generator;
 using System.Collections.Immutable;
-using System.Reflection;
 
 namespace SimpleLocalizations.Tests;
 
