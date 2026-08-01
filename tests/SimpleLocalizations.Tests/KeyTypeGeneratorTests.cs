@@ -23,8 +23,8 @@ public class KeyTypeGeneratorTests
         Assert.Empty(run.Ids);
         Assert.Contains("namespace Probe;", run.OnlySource);
         Assert.Contains("public readonly partial struct FindingKey", run.OnlySource);
-        Assert.Contains("private FindingKey(string key) => Key = key;", run.OnlySource);
-        Assert.Contains("public string Key { get; }", run.OnlySource);
+        Assert.Contains("private FindingKey(string key) => _key = key;", run.OnlySource);
+        Assert.Contains("public string Key => _key ?? \"\";", run.OnlySource);
         Assert.Contains("public static FindingKey From(string key) => new(key);", run.OnlySource);
     }
 

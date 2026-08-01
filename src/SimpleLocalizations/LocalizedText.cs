@@ -16,10 +16,19 @@ namespace SimpleLocalizations;
 /// </summary>
 public readonly struct LocalizedText : IEquatable<LocalizedText>
 {
-    private LocalizedText(string text) => Text = text;
+    private readonly string? _text;
 
-    /// <summary>The rendered sentence, in the ambient UI culture as of when it was produced.</summary>
-    public string Text { get; }
+    private LocalizedText(string text) => _text = text;
+
+    /// <summary>
+    /// The rendered sentence, in the ambient UI culture as of when it was produced.
+    /// <para>
+    /// Computed rather than stored, because a struct is always <see langword="default"/>-constructible: the
+    /// factory is the only way to make a <em>meaningful</em> one, but <c>default</c> is reachable from
+    /// anywhere and would otherwise hand back a null the signature promises is not.
+    /// </para>
+    /// </summary>
+    public string Text => _text ?? "";
 
     /// <summary>
     /// The only producer: <paramref name="key"/> resolved against <paramref name="catalog"/>, with
@@ -44,8 +53,8 @@ public readonly struct LocalizedText : IEquatable<LocalizedText>
     public override bool Equals(object? obj) => obj is LocalizedText other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode() => Text is null ? 0 : StringComparer.Ordinal.GetHashCode(Text);
+    public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Text);
 
     /// <summary>The sentence — so an interpolation of one reads as it always did.</summary>
-    public override string ToString() => Text ?? "";
+    public override string ToString() => Text;
 }

@@ -85,8 +85,8 @@ harness before it was written down.
 
 ## Minor
 
-- [ ] **15a.** `default(LocalizedText).Text` and `default(LocalizationKey).Key` are null under non-nullable
+- [x] **15a.** `default(LocalizedText).Text` and `default(LocalizationKey).Key` are null under non-nullable
       annotations.
-- [ ] **15b.** `VocabularyKeyTypes.Parse` silently overwrites a duplicated family entry.
+- [x] **15b.** `VocabularyKeyTypes.Parse` silently overwrites a duplicated family entry.
 - [x] **15c.** `README.md` uses hard tabs for comment alignment in one example.
-- [ ] **15d.** `.editorconfig` has no `[*]` section.
+- [x] **15d.** `.editorconfig` has no `[*]` section.

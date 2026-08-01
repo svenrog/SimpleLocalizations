@@ -211,6 +211,7 @@ public class VocabularyGeneratorTests
     [InlineData("detail=Probe.OtherKey")]
     [InlineData("Probe.ProbeKey | detail")]
     [InlineData("Probe.ProbeKey | a=b=c")]
+    [InlineData("Probe.ProbeKey | detail=Probe.OtherKey | detail=Probe.ProbeKey")]
     public void SL1006_refuses_a_key_type_that_is_not_a_default_followed_by_families(string declaration)
     {
         Assert.Equal(["SL1006"], Generate(Keys("alpha.one"), Declared(declaration)).Ids);

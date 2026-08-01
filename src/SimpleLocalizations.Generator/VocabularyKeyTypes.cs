@@ -49,6 +49,13 @@ internal sealed class VocabularyKeyTypes
 
             if (parts.Length == 2 && parts[0].Trim().Length > 0 && parts[1].Trim().Length > 0)
             {
+                // A family named twice states two types for one set of keys. Silently keeping the last is a
+                // declaration that reads as one thing and does another.
+                if (byFamily.ContainsKey(parts[0].Trim()))
+                {
+                    return null;
+                }
+
                 byFamily[parts[0].Trim()] = parts[1].Trim();
             }
             else if (parts.Length == 1 && entry.Trim().Length > 0 && fallback.Length == 0)

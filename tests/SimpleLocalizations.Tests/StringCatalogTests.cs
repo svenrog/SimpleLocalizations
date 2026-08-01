@@ -81,6 +81,18 @@ public class StringCatalogTests
     }
 
     [Fact]
+    public void A_default_key_and_a_default_sentence_are_empty_rather_than_null()
+    {
+        // A struct is always default-constructible, whatever the factory says, so the signatures have to be
+        // true of one that never went through it.
+        Assert.Equal("", default(LocalizationKey).Key);
+        Assert.Equal("", default(LocalizationKey).ToString());
+        Assert.Equal("", default(LocalizedText).Text);
+        Assert.Equal("", default(LocalizedText).ToString());
+        Assert.Equal(default, default(LocalizedText));
+    }
+
+    [Fact]
     public void A_culture_file_authors_no_key_the_neutral_set_lacks()
     {
         // A key only a culture has is unreachable: nothing resolves it, because nothing declared it.

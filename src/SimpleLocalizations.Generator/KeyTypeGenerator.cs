@@ -131,16 +131,21 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
         source.AppendLine($"{pad}/// </summary>");
         source.AppendLine($"{pad}{keyType.Access} readonly partial {(keyType.IsRecord ? "record " : "")}struct {keyType.Name}");
         source.AppendLine($"{pad}{{");
-        source.AppendLine($"{pad}    private {keyType.Name}(string key) => Key = key;");
+        source.AppendLine($"{pad}    private readonly string? _key;");
         source.AppendLine();
-        source.AppendLine($"{pad}    /// <summary>The dotted key the catalog resolves.</summary>");
-        source.AppendLine($"{pad}    public string Key {{ get; }}");
+        source.AppendLine($"{pad}    private {keyType.Name}(string key) => _key = key;");
+        source.AppendLine();
+        source.AppendLine($"{pad}    /// <summary>");
+        source.AppendLine($"{pad}    /// The dotted key the catalog resolves. Computed rather than stored, because a struct is");
+        source.AppendLine($"{pad}    /// always default-constructible and the signature promises no null.");
+        source.AppendLine($"{pad}    /// </summary>");
+        source.AppendLine($"{pad}    public string Key => _key ?? \"\";");
         source.AppendLine();
         source.AppendLine($"{pad}    /// <summary>The generated declaration's constructor.</summary>");
         source.AppendLine($"{pad}    public static {keyType.Name} From(string key) => new(key);");
         source.AppendLine();
         source.AppendLine($"{pad}    /// <inheritdoc />");
-        source.AppendLine($"{pad}    public override string ToString() => Key ?? \"\";");
+        source.AppendLine($"{pad}    public override string ToString() => Key;");
         source.AppendLine($"{pad}}}");
 
         for (var depth = enclosing.Length - 1; depth >= 0; depth--)

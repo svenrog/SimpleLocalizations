@@ -15,14 +15,19 @@ namespace SimpleLocalizations;
 [VocabularyKey]
 public readonly record struct LocalizationKey
 {
-    private LocalizationKey(string key) => Key = key;
+    private readonly string? _key;
 
-    /// <summary>The key the catalog resolves.</summary>
-    public string Key { get; }
+    private LocalizationKey(string key) => _key = key;
+
+    /// <summary>
+    /// The key the catalog resolves. Computed rather than stored, because a struct is always
+    /// <see langword="default"/>-constructible and the signature promises no null.
+    /// </summary>
+    public string Key => _key ?? "";
 
     /// <summary>The generated declaration's constructor.</summary>
     public static LocalizationKey From(string key) => new(key);
 
     /// <inheritdoc />
-    public override string ToString() => Key ?? "";
+    public override string ToString() => Key;
 }
