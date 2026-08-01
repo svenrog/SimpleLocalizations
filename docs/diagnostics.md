@@ -2,7 +2,7 @@
 
 [← README](../README.md) · Next: [Scope](scope.md)
 
-Fourteen rules, ids `SL1001`–`SL1014`, category `SimpleLocalizations`. All ship at **warning** severity.
+Fifteen rules, ids `SL1001`–`SL1015`, category `SimpleLocalizations`. All ship at **warning** severity.
 
 ## The set
 
@@ -34,6 +34,7 @@ Fourteen rules, ids `SL1001`–`SL1014`, category `SimpleLocalizations`. All shi
 | `SL1012` | A key of the declared type whose family names no member of the declared set. |
 | `SL1013` | A `[VocabularyKey]` type that is not `partial`, so its body cannot be written. |
 | `SL1014` | A `[VocabularyFamily]` type that enumerates no members, so it checks nothing. |
+| `SL1015` | A `[VocabularyKey]` type nested in a type the generator cannot reopen — one that is not `partial`, or generic. |
 
 ## Making them fatal
 

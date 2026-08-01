@@ -47,7 +47,7 @@ too.
 
 ## Diagnostics
 
-Ids `SL1001`–`SL1014`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
+Ids `SL1001`–`SL1015`, category `SimpleLocalizations`, all at **warning** severity — a consumer escalates
 through its own strictness. The set and what each refuses is the table in `docs/diagnostics.md`, which is the
 one statement of it; `AnalyzerReleases.Unshipped.md` is the tracked form `RS2008` requires.
 

@@ -13,7 +13,7 @@ harness before it was written down.
       Verified: `CS8785`, and the generator contributes *nothing* — every vocabulary in the project vanishes.
       Fix: include the resource's directory in the hint name.
 
-- [ ] **2. `[VocabularyKey]` on a nested type emits a different type** — `KeyTypeGenerator.Describe` reads
+- [x] **2. `[VocabularyKey]` on a nested type emits a different type** *(adds `SL1015`)* — `KeyTypeGenerator.Describe` reads
       `ContainingNamespace` and ignores `ContainingType`. Verified: a struct nested in `Outer` gets a
       top-level `Probe.NestedKey` with a full body, while the nested type keeps none. Fix: re-emit the
       enclosing `partial` chain.

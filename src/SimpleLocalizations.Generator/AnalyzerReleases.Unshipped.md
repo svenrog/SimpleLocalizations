@@ -18,3 +18,4 @@ SL1011 | SimpleLocalizations | Warning | A declared family member has no key aut
 SL1012 | SimpleLocalizations | Warning | A key is authored outside the families its type is filed under.
 SL1013 | SimpleLocalizations | Warning | A vocabulary key type is not partial.
 SL1014 | SimpleLocalizations | Warning | A declared family enumerates no members.
+SL1015 | SimpleLocalizations | Warning | A vocabulary key type is nested in a type its body cannot be written into.

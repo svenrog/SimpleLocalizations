@@ -25,6 +25,10 @@ A key is always a **struct** — the attribute goes nowhere else — and the gen
 declaration says, so `partial struct` and `partial record struct` both work. Forget the `partial` and
 `SL1013` says so.
 
+Nesting one inside a holder type works too, as long as the holder is `partial` and not generic — the body is
+written where the type was declared, so the generator has to reopen whatever encloses it. `SL1015` says so
+when it cannot.
+
 ## Using it
 
 Name the type on the resource:
