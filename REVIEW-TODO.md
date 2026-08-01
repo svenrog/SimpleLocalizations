@@ -22,7 +22,7 @@ harness before it was written down.
       an empty arg list and hands the template back verbatim. Verified: `Neutral("composed")` yields
       `found {0} of {1}`, on the path whose whole purpose is text that gets stored. Fix: fill unconditionally.
 
-- [ ] **4. `SL1011` fires on any `const string` on a family set** — the member test matches every constant
+- [x] **4. `SL1011` fires on any `const string` on a family set** — the member test matches every constant
       regardless of accessibility. Verified: a `private const string` demands a key. Fix: only public members
       are members, which is what a closed set exposes.
 

@@ -147,6 +147,25 @@ public class FamilySetShapeTests
     }
 
     [Fact]
+    public void A_member_the_set_does_not_expose_is_not_a_member()
+    {
+        // A set is what it exposes. A private constant is an implementation detail on the same type, and
+        // nothing outside it can compose a key from a name it cannot see.
+        Assert.Empty(Check(
+            """
+            [VocabularyFamily("heading")]
+            public static class Sections
+            {
+                private const string _table = "not-a-heading";
+                internal const string Draft = "also-not-a-heading";
+
+                public const string Alpha = "alpha";
+            }
+            """,
+            "heading.alpha"));
+    }
+
+    [Fact]
     public void A_missing_member_is_reported_whatever_shape_the_set_takes()
     {
         var messages = Check(
