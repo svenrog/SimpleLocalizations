@@ -18,16 +18,28 @@ public sealed class KeyTypeGenerator : IIncrementalGenerator
 {
     private const string _marker = "SimpleLocalizations.VocabularyKeyAttribute";
 
+    /// <summary>The pipeline stages, by the names a test asks after.</summary>
+    internal static class Stages
+    {
+        public const string Described = "KeyTypesDescribed";
+
+        public const string KeyTypes = "KeyTypes";
+    }
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Named stages: a generator's cost is not what one run takes but how much of it a keystroke repeats,
+        // and a tracking name is the only way a test can ask which stages were reused. Nothing else reads them.
         var keyTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 _marker,
                 static (node, _) => node is TypeDeclarationSyntax,
                 static (target, _) => Describe(target))
+            .WithTrackingName(Stages.Described)
             .Where(static described => described is not null)
-            .Select(static (described, _) => described!.Value);
+            .Select(static (described, _) => described!.Value)
+            .WithTrackingName(Stages.KeyTypes);
 
         context.RegisterSourceOutput(keyTypes, static (production, keyType) => Produce(production, keyType));
     }
