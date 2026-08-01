@@ -88,6 +88,13 @@ public sealed class TextCultures
     /// Picks the best supported culture from an ordered preference list, falling back to the neutral one.
     /// For content negotiation (an <c>Accept-Language</c> header), where a preference list is by definition a
     /// set of wishes rather than an instruction — unlike <see cref="TryResolve"/>.
+    /// <para>
+    /// A preference matches a culture that shares its <b>language</b> where none matches it exactly, so
+    /// <c>sv</c> reaches an <c>sv-SE</c> set and <c>en-AU</c> reaches an <c>en-GB</c> one. A browser sends
+    /// the bare language more often than not, and refusing it would answer a reader who asked for Swedish in
+    /// English while holding Swedish. Each preference is tried both ways before the next is tried at all,
+    /// because the order is the reader's ranking and an exact second choice does not outrank a near first.
+    /// </para>
     /// </summary>
     public CultureInfo Negotiate(IEnumerable<string>? preferences)
     {
@@ -95,7 +102,9 @@ public sealed class TextCultures
         {
             // Strip any RFC 9110 quality value; ordering is the caller's, which is what a parsed
             // Accept-Language already gives us.
-            if (Match(preference.Split(';')[0].Trim()) is { } match)
+            var tag = preference.Split(';')[0].Trim();
+
+            if ((Match(tag) ?? Related(tag)) is { } match)
             {
                 return CultureInfo.GetCultureInfo(match);
             }
@@ -114,4 +123,15 @@ public sealed class TextCultures
 
     private string? Match(string tag) =>
         Supported.FirstOrDefault(c => string.Equals(c, tag, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// The first supported culture sharing <paramref name="tag"/>'s language. First because
+    /// <see cref="Supported"/> is neutral-first, which makes the pick the one the application would rather
+    /// ship when it holds several of a language.
+    /// </summary>
+    private string? Related(string tag) =>
+        Supported.FirstOrDefault(c => string.Equals(Language(c), Language(tag), StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A tag's language subtag — everything before the first hyphen.</summary>
+    private static string Language(string tag) => tag.Split('-')[0];
 }

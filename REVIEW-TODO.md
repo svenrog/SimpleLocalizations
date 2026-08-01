@@ -26,7 +26,7 @@ harness before it was written down.
       regardless of accessibility. Verified: a `private const string` demands a key. Fix: only public members
       are members, which is what a closed set exposes.
 
-- [ ] **5. `Negotiate` never matches a language-only tag** — matching is exact-name only. Verified: with
+- [x] **5. `Negotiate` never matches a language-only tag** — matching is exact-name only. Verified: with
       `en-US` and `sv-SE` supported, `sv`, `en` and `sv-FI` all fall to the neutral culture. Fix: fall back to
       a parent-culture match after the exact one.
 
