@@ -121,7 +121,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         {
             // A derived key hangs off another one by a suffix the read edge appends — a finding's supporting
             // text, a signal's pitch. It is authored, but it is not an identity anything names.
-            if (derived.Any(suffix => entry.Key.EndsWith(suffix, StringComparison.Ordinal)))
+            if (Derives(entry.Key, derived))
             {
                 continue;
             }
@@ -181,6 +181,24 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path))
                 .Select(character => character is '\\' or '/' or ':' ? '.' : character))
             .Trim('.');
+
+    /// <summary>
+    /// Whether <paramref name="key"/> hangs off another by one of <paramref name="derived"/>. Written out
+    /// rather than as <c>Any</c> over a closure, which is asked once per authored key and mostly of an empty
+    /// set — a vocabulary declaring no derived suffix would allocate for every key to be told so.
+    /// </summary>
+    private static bool Derives(string key, string[] derived)
+    {
+        foreach (var suffix in derived)
+        {
+            if (key.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// The suffixes the read edge appends to another key — a finding's supporting text, a signal's pitch.
