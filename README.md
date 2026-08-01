@@ -3,7 +3,7 @@
 [![Platform](https://img.shields.io/badge/Platform-.NET%20Standard%202.0-blue.svg?style=flat)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
 [![NuGet](https://img.shields.io/nuget/v/SimpleLocalizations)](https://www.nuget.org/packages/SimpleLocalizations)
 [![Build](https://img.shields.io/github/actions/workflow/status/svenrog/SimpleLocalizations/build.yml?branch=master)](https://github.com/svenrog/SimpleLocalizations/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/github/license/svenrog/SimpleLocalizations)](LICENSE.txt)
+[![License: MIT](https://img.shields.io/github/license/svenrog/SimpleLocalizations)](https://github.com/svenrog/SimpleLocalizations/blob/master/LICENSE.txt)
 
 Localized text whose **identity is stored**.
 
@@ -54,8 +54,9 @@ dotnet add package SimpleLocalizations
 ```csharp
 var text = StringsKeys.Catalog(new TextCultures("en-US", "sv-SE"));
 
-text.Format(StringsKeys.Greeting, "world");   // "Hello, world", or "Hej, world" for a Swedish reader
-text.Neutral(StringsKeys.Greeting, "world");  // "Hello, world" whoever is reading — what you persist
+text.Get(StringsKeys.Greeting);                // the template as authored, holes and all
+text.Format(StringsKeys.Greeting, "world");    // "Hello, world", or "Hej, world" for a Swedish reader
+text.Neutral(StringsKeys.Greeting, "world");   // "Hello, world" whoever is reading — what you persist
 ```
 
 `StringsKeys` is generated from `Strings.resx`. The class name, namespace, resource name and key type all
@@ -72,14 +73,14 @@ That is the whole of the simple path.
 | --- | --- |
 | [Typed keys](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/typed-keys.md) | Text that *is* an identity: giving a key its own type, and the set it is filed under. |
 | [Declaring a vocabulary](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/declaring-a-vocabulary.md) | Every `VocabularyResource` setting, what gets generated, and the one non-obvious constraint. |
-| [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) | `SL1001`–`SL1014`: what each refuses, and which to make fatal. |
+| [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) | `SL1001`–`SL1015`: what each refuses, and which to make fatal. |
 | [Scope](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/scope.md) | What this package leaves to you, and why it ships a list formatter. |
 
 ## Icon
 
 The package icon is the ["globe showing Europe-Africa" emoji](https://github.com/googlefonts/noto-emoji) from
 Google's Noto Emoji, used unmodified under the Apache License 2.0. It is licensed separately from the source
-code above — see [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
+code above — see [THIRD-PARTY-NOTICES.md](https://github.com/svenrog/SimpleLocalizations/blob/master/THIRD-PARTY-NOTICES.md).
 
 ## Package maintainer
 
@@ -87,7 +88,7 @@ https://github.com/svenrog
 
 ## Change log
 
-Changes are documented in [CHANGELOG.md](./CHANGELOG.md).
+Changes are documented in [CHANGELOG.md](https://github.com/svenrog/SimpleLocalizations/blob/master/CHANGELOG.md).
 
 ## License
 

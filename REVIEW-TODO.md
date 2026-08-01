@@ -55,7 +55,7 @@ harness before it was written down.
       the hand-rolled harness by "the metadata goes through the same parser that drops a `;`". It goes
       through a `Dictionary`. Nothing exercises `SL1009` or the truncation. Fix: parse a real `.editorconfig`.
 
-- [ ] **12. README relative links break in the packed readme** — `LICENSE.txt`,
+- [x] **12. README relative links break in the packed readme** — `LICENSE.txt`,
       `./THIRD-PARTY-NOTICES.md` and `./CHANGELOG.md` 404 on nuget.org.
 
 ## Build
@@ -84,5 +84,5 @@ harness before it was written down.
 - [ ] **15a.** `default(LocalizedText).Text` and `default(LocalizationKey).Key` are null under non-nullable
       annotations.
 - [ ] **15b.** `VocabularyKeyTypes.Parse` silently overwrites a duplicated family entry.
-- [ ] **15c.** `README.md` uses hard tabs for comment alignment in one example.
+- [x] **15c.** `README.md` uses hard tabs for comment alignment in one example.
 - [ ] **15d.** `.editorconfig` has no `[*]` section.
