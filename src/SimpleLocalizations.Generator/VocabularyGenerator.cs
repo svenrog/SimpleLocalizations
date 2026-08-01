@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SimpleLocalizations.Generator;
@@ -166,10 +165,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
         production.AddSource(
             vocabulary.Hint + ".g.cs",
-            SourceText.From(
-                VocabularyEmitter.Emit(
-                    root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName),
-                Encoding.UTF8));
+            VocabularyEmitter.Emit(
+                root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName));
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.Text;
 using System.Text;
 
 namespace SimpleLocalizations.Generator;
@@ -13,7 +14,7 @@ internal static class VocabularyEmitter
     /// namespace, holding a nested class per family and a key property per authored entry. Called once the tree
     /// is known to be emittable — every collision is reported before this runs.
     /// </summary>
-    public static string Emit(
+    public static SourceText Emit(
         VocabularyNode root, string @namespace, string className, VocabularyKeyTypes keyTypes, string resourceName)
     {
         var source = new StringBuilder();
@@ -53,7 +54,19 @@ internal static class VocabularyEmitter
         }
 
         source.AppendLine("}");
-        return source.ToString();
+        return Text(source);
+    }
+
+    /// <summary>
+    /// The finished document as the text Roslyn takes, read out of the buffer rather than through a string of
+    /// it. <see cref="StringBuilder.ToString"/> is one more copy of the whole document, and past a size
+    /// Roslyn's own reader knows, that copy is a single object on the large object heap.
+    /// </summary>
+    private static SourceText Text(StringBuilder source)
+    {
+        using var reader = new BufferReader(source);
+
+        return SourceText.From(reader, source.Length, Encoding.UTF8);
     }
 
     /// <summary>
@@ -172,6 +185,33 @@ internal static class VocabularyEmitter
                     source.Append(character);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// A reader over the buffer, which is what <see cref="SourceText.From(TextReader, int, Encoding, SourceHashAlgorithm)"/>
+    /// takes. Roslyn then holds the document in chunks it sized itself; handing it a string means the whole
+    /// document exists twice at once.
+    /// </summary>
+    private sealed class BufferReader : TextReader
+    {
+        private readonly StringBuilder _source;
+        private int _position;
+
+        public BufferReader(StringBuilder source) => _source = source;
+
+        public override int Peek() => _position < _source.Length ? _source[_position] : -1;
+
+        public override int Read() => _position < _source.Length ? _source[_position++] : -1;
+
+        public override int Read(char[] buffer, int index, int count)
+        {
+            var read = Math.Min(count, _source.Length - _position);
+
+            _source.CopyTo(_position, buffer, index, read);
+            _position += read;
+
+            return read;
         }
     }
 }
