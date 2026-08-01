@@ -44,7 +44,7 @@ harness before it was written down.
 
 - [x] **9. Drop `ILocalizedTextSource`** — no implementations, consumers or tests. Decision: remove it.
 
-- [ ] **10. `ListFormatter` cannot reach a consumer's patterns** — the resource set is this assembly's, so
+- [x] **10. `ListFormatter` cannot reach a consumer's patterns** — the resource set is this assembly's, so
       `scope.md`'s "ship a satellite beside it" is not reachable for a consumer. Decision: accept a
       caller-supplied catalog.
 

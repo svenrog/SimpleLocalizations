@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- A consumer's own list patterns, for a culture this package ships none for. Deliberately not English
+       and deliberately unlike the shipped set: a test that copied the shipped wording would pass whether or
+       not the supplied catalog was the one actually read. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="List_And_Two" xml:space="preserve">
+    <value>{0} und {1}</value>
+  </data>
+  <data name="List_And_Middle" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="List_And_End" xml:space="preserve">
+    <value>{0} und {1}</value>
+  </data>
+  <data name="List_Or_Two" xml:space="preserve">
+    <value>{0} oder {1}</value>
+  </data>
+  <data name="List_Or_Middle" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="List_Or_End" xml:space="preserve">
+    <value>{0} oder {1}</value>
+  </data>
+  <data name="List_Separator" xml:space="preserve">
+    <value>{0}; {1}</value>
+  </data>
+  <data name="List_Truncated" xml:space="preserve">
+    <value>{0} und {1} weitere</value>
+  </data>
+</root>

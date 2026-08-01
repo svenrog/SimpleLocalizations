@@ -19,6 +19,8 @@ All notable changes to this project are documented here.
 - `Template.Fill` no longer returns the template unchanged for an empty argument list, so a template with
   holes and nothing to fill them throws instead of rendering `{0}` at a reader — or storing it.
 - `ListFormatter.Truncated` refuses a cap below one, which rendered as a separator with no item before it.
+- `ListFormatter.And`, `Or` and `Truncated` take an optional `StringCatalog`, so a culture this package ships
+  no patterns for can author its own. `ListFormatter.Patterns` names the keys such a catalog owes.
 
 ## 0.2.0
 

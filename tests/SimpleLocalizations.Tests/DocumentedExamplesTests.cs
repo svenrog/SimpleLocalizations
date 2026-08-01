@@ -46,6 +46,16 @@ public class DocumentedExamplesTests
                 public readonly partial record struct FindingKey;
             }
             """),
+        // No resource: list patterns are not lowercase and so are not a vocabulary. The marker type stands in
+        // for whatever the consumer's assembly happens to hold.
+        ["patterns"] = new(
+            [],
+            """
+            namespace Probe
+            {
+                public static class ListPatterns;
+            }
+            """),
         ["console"] = new(
             [("Console.resx", Keys("greeting"),
                 new Declaration(

@@ -14,7 +14,29 @@ resource your reader can translate, and nothing may word a refusal on your behal
 `LocalizedText`'s constructor is private and its one factory takes a catalog and a key.
 
 **Cultures beyond `en-US`, `en-GB` and `sv-SE` for `ListFormatter`.** Those list patterns are the package's
-own resource set. Need another? Ship a satellite beside it.
+own resource set, which you cannot add a satellite to without building one against this assembly. So author
+the same keys in a resource of your own and pass a catalog over it:
+
+<!-- compiles: patterns -->
+```csharp
+// Any type from the assembly that embeds the resource. These keys are not lowercase, so the resource is an
+// ordinary EmbeddedResource rather than a VocabularyResource — nothing here is a stored identity.
+var patterns = new TextCultures("de-DE").Catalog(
+    "MyApp.Localization.ListPatterns", typeof(ListPatterns).Assembly);
+
+var joined = ListFormatter.And(["a", "b", "c"], patterns);
+```
+
+`ListFormatter.Patterns` names every key such a catalog owes — read it in a parity test rather than copying
+the list, so a pattern added here fails your build rather than someone's reader.
+
+| Key | Fills with |
+| --- | --- |
+| `List_And_Two`, `List_Or_Two` | `{0}` and `{1}`: the only two items |
+| `List_And_Middle`, `List_Or_Middle` | `{0}` the accumulated head, `{1}` the next item |
+| `List_And_End`, `List_Or_End` | `{0}` the head, `{1}` the last item |
+| `List_Separator` | `{0}` the head, `{1}` the next item — a plain join, no conjunction |
+| `List_Truncated` | `{0}` the items named, `{1}` how many were dropped |
 
 ## Why a list formatter
 
