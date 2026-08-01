@@ -64,7 +64,7 @@ public static class ListFormatter
     /// own when omitted.
     /// </param>
     public static string And(IEnumerable<string> items, StringCatalog? patterns = null) =>
-        Joined(items, "list-and", patterns ?? _shipped);
+        Joined(items, "list-and-two", "list-and-middle", "list-and-end", patterns ?? _shipped);
 
     /// <summary>
     /// The items as a disjunction list — <c>"a or b"</c>, <c>"a, b, or c"</c>. The serial comma is the same
@@ -77,26 +77,59 @@ public static class ListFormatter
     /// own when omitted.
     /// </param>
     public static string Or(IEnumerable<string> items, StringCatalog? patterns = null) =>
-        Joined(items, "list-or", patterns ?? _shipped);
+        Joined(items, "list-or-two", "list-or-middle", "list-or-end", patterns ?? _shipped);
 
-    private static string Joined(IEnumerable<string> items, string prefix, StringCatalog patterns)
+    /// <summary>
+    /// The keys are passed whole rather than composed from a stem. Interpolating one per call allocated a
+    /// key string on a path a page walks for every list it renders, to arrive at one of six constants.
+    /// </summary>
+    private static string Joined(
+        IEnumerable<string> items, string two, string middle, string end, StringCatalog patterns)
     {
-        var list = items.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+        var list = Present(items);
 
         return list.Count switch
         {
             0 => string.Empty,
             1 => list[0],
-            2 => Format(patterns, $"{prefix}-two", list[0], list[1]),
-            // Folded left so the pattern applies pairwise, which is how ICU's list patterns compose: the
-            // accumulated head is always the first argument, the next item the second.
-            _ => Format(
-                patterns,
-                $"{prefix}-end",
-                list.Take(list.Count - 1).Skip(1)
-                    .Aggregate(list[0], (head, item) => Format(patterns, $"{prefix}-middle", head, item)),
-                list[list.Count - 1]),
+            2 => Format(patterns, two, list[0], list[1]),
+            _ => Format(patterns, end, Folded(list, middle, patterns), list[list.Count - 1]),
         };
+    }
+
+    /// <summary>
+    /// The items that are actually words. Filtered by hand because a LINQ predicate allocates an iterator
+    /// and a closure, and nothing here needs deferred execution — the count is read immediately.
+    /// </summary>
+    private static List<string> Present(IEnumerable<string> items)
+    {
+        var present = new List<string>();
+
+        foreach (var item in items)
+        {
+            if (!string.IsNullOrWhiteSpace(item))
+            {
+                present.Add(item);
+            }
+        }
+
+        return present;
+    }
+
+    /// <summary>
+    /// Everything but the last item, folded left so the pattern applies pairwise — which is how ICU's list
+    /// patterns compose: the accumulated head is always the first argument, the next item the second.
+    /// </summary>
+    private static string Folded(List<string> list, string middle, StringCatalog patterns)
+    {
+        var head = list[0];
+
+        for (var index = 1; index < list.Count - 1; index++)
+        {
+            head = Format(patterns, middle, head, list[index]);
+        }
+
+        return head;
     }
 
     /// <summary>
@@ -126,20 +159,37 @@ public static class ListFormatter
 
         if (items.Count <= max)
         {
-            return Join(items, catalog);
+            return Join(items, items.Count, catalog);
         }
 
         return Format(
             catalog,
             "list-truncated",
-            Join([.. items.Take(max)], catalog),
+            Join(items, max, catalog),
             (items.Count - max).ToString(CultureInfo.CurrentCulture));
     }
 
-    /// <summary>A plain separated join, pattern-driven so a culture that separates differently can say so.</summary>
-    private static string Join(IReadOnlyList<string> items, StringCatalog patterns) =>
-        items.Count == 0 ? string.Empty : items.Skip(1).Aggregate(items[0],
-            (head, item) => Format(patterns, "list-separator", head, item));
+    /// <summary>
+    /// A plain separated join of the first <paramref name="count"/> items, pattern-driven so a culture that
+    /// separates differently can say so. Counted rather than copied: the truncating caller wants a prefix of
+    /// the list, and taking one used to allocate a second list to hold it.
+    /// </summary>
+    private static string Join(IReadOnlyList<string> items, int count, StringCatalog patterns)
+    {
+        if (count == 0)
+        {
+            return string.Empty;
+        }
+
+        var head = items[0];
+
+        for (var index = 1; index < count; index++)
+        {
+            head = Format(patterns, "list-separator", head, items[index]);
+        }
+
+        return head;
+    }
 
     private static string Format(StringCatalog patterns, string key, string first, string second) =>
         string.Format(CultureInfo.CurrentCulture, patterns.Get(key), first, second);

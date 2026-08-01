@@ -33,14 +33,26 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         RegexOptions.None,
         TimeSpan.FromSeconds(1));
 
+    /// <summary>The pipeline stages, by the names a test asks after.</summary>
+    internal static class Stages
+    {
+        public const string Described = "Described";
+
+        public const string Vocabularies = "Vocabularies";
+    }
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Named stages: a generator's cost is not what one run takes but how much of it a keystroke repeats,
+        // and a tracking name is the only way a test can ask which stages were reused. Nothing else reads them.
         var vocabularies = context.AdditionalTextsProvider
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Select(static (pair, token) => Describe(pair.Left, pair.Right, token))
+            .WithTrackingName(Stages.Described)
             .Where(static described => described is not null)
-            .Select(static (described, _) => described!.Value);
+            .Select(static (described, _) => described!.Value)
+            .WithTrackingName(Stages.Vocabularies);
 
         context.RegisterSourceOutput(vocabularies, static (production, vocabulary) => Produce(production, vocabulary));
     }
