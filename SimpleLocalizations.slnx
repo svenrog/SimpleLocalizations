@@ -14,7 +14,7 @@
     <File Path="docs/typed-keys.md" />
   </Folder>
   <Folder Name="/Benchmarks/">
-    <Project Path="bench/SimpleLocalizations.Benchmarks/SimpleLocalizations.Benchmarks.csproj" />
+    <Project Path="tests/SimpleLocalizations.Benchmarks/SimpleLocalizations.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/SimpleLocalizations.Tests/SimpleLocalizations.Tests.csproj" />
