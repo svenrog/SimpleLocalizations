@@ -110,6 +110,25 @@ internal static class VocabularyHarness
     }
 
     /// <summary>
+    /// An analyzer over a compilation the caller already holds, for the tests that measure what analysing
+    /// costs: building a compilation dwarfs running a rule over it, so a measurement that included it would
+    /// be a measurement of Roslyn.
+    /// </summary>
+    public static ImmutableArray<Diagnostic> AnalyzeOn(
+        CSharpCompilation compilation,
+        DiagnosticAnalyzer analyzer,
+        IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources)
+    {
+        var files = Files(resources);
+
+        return compilation
+            .WithAnalyzers([analyzer], new AnalyzerOptions(files.Texts, files.Options))
+            .GetAnalyzerDiagnosticsAsync()
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    /// <summary>
     /// Key types as the generator writes them. Spelled out rather than generated, because an analyzer test
     /// runs one analyzer over one compilation and nothing has written the bodies.
     /// </summary>

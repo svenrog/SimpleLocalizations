@@ -34,4 +34,36 @@ internal static class Allocation
 
         return (GC.GetAllocatedBytesForCurrentThread() - before) / calls;
     }
+
+    /// <summary>
+    /// What <paramref name="work"/> allocates across every thread, for the work that does not stay on the
+    /// calling one — an analyzer's is scheduled, and the per-thread counter reports the same figure whether
+    /// the rule walks its set once or once per key.
+    /// <para>
+    /// The <b>least</b> of several runs. A process-wide count picks up whatever else the process allocated
+    /// while it ran, and that is only ever added — so the smallest reading is the one closest to the truth.
+    /// The assembly runs its tests one at a time for the same reason; see <c>Serialized.cs</c>.
+    /// </para>
+    /// </summary>
+    public static long Total(Action work, int runs = 3)
+    {
+        work();
+
+        var least = long.MaxValue;
+
+        for (var run = 0; run < runs; run++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            var before = GC.GetTotalAllocatedBytes(precise: true);
+
+            work();
+
+            least = Math.Min(least, GC.GetTotalAllocatedBytes(precise: true) - before);
+        }
+
+        return least;
+    }
 }
