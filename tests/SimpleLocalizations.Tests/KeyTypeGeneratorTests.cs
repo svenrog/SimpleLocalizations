@@ -1,4 +1,3 @@
-using SimpleLocalizations.Generator;
 using static SimpleLocalizations.Tests.VocabularyHarness;
 
 namespace SimpleLocalizations.Tests;

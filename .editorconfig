@@ -73,7 +73,17 @@ dotnet_diagnostic.CA2016.severity = warning
 # pinned explicitly since it's now load-bearing for the build (see TreatWarningsAsErrors).
 dotnet_diagnostic.xUnit1051.severity = warning
 
-# IDE290>
+# SYSLIB1045: use [GeneratedRegex] over a Regex built at run time. Defaults to Info, which never surfaces
+# in `dotnet build` output, so the rule was advice nothing enforced. Only fires where the generator is
+# available, which leaves the netstandard2.0 halves alone.
+dotnet_diagnostic.SYSLIB1045.severity = warning
+
+# CA1865-CA1867: the char overload of StartsWith/EndsWith/IndexOf. Same story - Info by default.
+dotnet_diagnostic.CA1865.severity = warning
+dotnet_diagnostic.CA1866.severity = warning
+dotnet_diagnostic.CA1867.severity = warning
+
+# IDE0290: primary constructors off in src; test fixtures may use them.
 csharp_style_prefer_primary_constructors = false
 
 # All private fields use _camelCase, including static and const
@@ -87,15 +97,3 @@ dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.underscore_camel_case.required_prefix = _
 dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 
-[src/SimpleCrawler.Js/**.cs]
-
-# CA1822: Mark members as static - the JS DOM host objects
-# require stubbing browser features.
-dotnet_diagnostic.CA1822.severity = none
-dotnet_diagnostic.IDE0060.severity = none
-
-[tests/SimpleCrawler.Benchmarks/**.cs]
-
-# CA1822: Mark members as static - BenchmarkDotNet requires instance [Benchmark] methods,
-# so acting on this suggestion would break the benchmarks.
-dotnet_diagnostic.CA1822.severity = none

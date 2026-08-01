@@ -65,11 +65,21 @@ the same parser that drops a `;`. A harness that stubbed the metadata would test
 Every diagnostic has a case that fires it and, where the rule has an off switch or a scope, a case proving it
 stays silent. A rule with only a positive case passes when it fires on everything.
 
+`DocumentedExamplesTests` compiles the call sites `README.md` and `docs/` show, **read out of the markdown**
+rather than copied — a test holding its own copy proves the copy compiles and says nothing about what a
+reader is told. A `csharp` fence is preceded by `<!-- compiles: {fixture} -->` naming the resources it is
+compiled against, or `<!-- illustrative: … -->` where it is generated source rather than a call site. An
+unmarked fence fails, so a new example cannot arrive untested.
+
 ## Code style
 
-Mirrors Overlode and SimpleCrawler (`.editorconfig`, `TreatWarningsAsErrors`):
+Mirrors Overlode and SimpleCrawler (`.editorconfig`, `TreatWarningsAsErrors`, `MSBuildTreatWarningsAsErrors`
+for the MSBuild half `TreatWarningsAsErrors` cannot reach):
 
 - Primary constructors disabled (IDE0290) in `src`; test fixtures may use them.
+- A rule that ships at **Info** severity is advice nothing enforces — `dotnet build` never prints it.
+  Promoting one to `warning` in `.editorconfig` is how it becomes a rule: `SYSLIB1045` (`[GeneratedRegex]`
+  over a run-time `Regex`) and `CA1865`–`CA1867` (the `char` overloads) are there for that reason.
 - Private fields `_camelCase`, including static/const. One top-level class per `.cs` file, filename matches.
 - Declaration comments go in `/// <summary>` XmlDoc, not `//`. Plain `//` is rare in-body rationale only.
 - **Comment only what the code cannot show, only where a reader would otherwise get it wrong.** State the

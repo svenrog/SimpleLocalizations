@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using SimpleLocalizations.Generator;
 using System.Collections.Immutable;
-using System.Reflection;
 
 namespace SimpleLocalizations.Tests;
 
@@ -55,6 +54,26 @@ internal static class VocabularyHarness
 
         _ = updated;
         return new Run(diagnostics, sources);
+    }
+
+    /// <summary>
+    /// Both generators over <paramref name="resources"/>, then the C# compiler over everything they produced
+    /// together with <paramref name="source"/> — which is what a documented call site is: generated members
+    /// and the runtime's own overloads, resolved against each other.
+    /// </summary>
+    public static ImmutableArray<Diagnostic> Compile(
+        IReadOnlyList<(string FileName, string Resx, Declaration Declaration)> resources, string source)
+    {
+        var files = Files(resources);
+
+        CSharpGeneratorDriver
+            .Create(
+                [new VocabularyGenerator().AsSourceGenerator(), new KeyTypeGenerator().AsSourceGenerator()],
+                files.Texts,
+                optionsProvider: files.Options)
+            .RunGeneratorsAndUpdateCompilation(Compile(source), out var updated, out _);
+
+        return updated.GetDiagnostics();
     }
 
     /// <summary>Runs the key-type generator over <paramref name="source"/>.</summary>
