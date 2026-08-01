@@ -10,6 +10,7 @@ You declare the name; the generator writes the body, because the shape *is* the 
 and one factory are what keep the vocabulary closed, and a hand-rolled type that grew a public constructor
 would open it again silently:
 
+<!-- compiles: keytype -->
 ```csharp
 [VocabularyKey]
 public readonly partial record struct FindingKey;
@@ -25,9 +26,10 @@ says, so a plain `partial struct` and a `partial record struct` both work. `SL10
                     VocabularyKeyType="MyApp.FindingKey" />
 ```
 
+<!-- compiles: security -->
 ```csharp
 var stored = catalog.Neutral(SecurityKeys.Cookies.Insecure.Key);   // what you persist
-var shown  = catalog.Get(SecurityKeys.Cookies.Insecure.Key);       // what this reader sees
+var shown = catalog.Get(SecurityKeys.Cookies.Insecure.Key);        // what this reader sees
 ```
 
 The `.Key` is the string the catalog resolves, and a declared type is where you spell it: `StringCatalog`
@@ -45,6 +47,7 @@ names that segment and nothing deeper.
 A claim about a **type** is an attribute on that type, so a `typeof` cannot go stale and no name is written
 twice:
 
+<!-- compiles: keytype -->
 ```csharp
 [VocabularyFamily("category")]                 // every member needs a `category.{member}` key — SL1011
 public enum FindingCategories { Tls, Stack, Company }
@@ -76,8 +79,9 @@ nothing groups — authors keys with no dot and emits members straight onto its 
 <data name="greeting" xml:space="preserve"><value>Hello</value></data>
 ```
 
+<!-- compiles: console -->
 ```csharp
-catalog.Get(ConsoleKeys.Greeting)
+var greeting = catalog.Get(ConsoleKeys.Greeting);
 ```
 
 Flat and nested keys can share one resource. A key type that claims `Families` still needs one, because a

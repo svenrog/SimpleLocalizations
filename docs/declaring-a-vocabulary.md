@@ -32,6 +32,7 @@ Everything a **type** claims is declared in code instead, on that type — see
 
 `cookies.insecure` becomes `SecurityKeys.Cookies.Insecure`:
 
+<!-- illustrative: generated source, shown with its global:: qualifiers elided -->
 ```csharp
 public static class SecurityKeys
 {

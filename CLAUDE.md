@@ -65,9 +65,11 @@ the same parser that drops a `;`. A harness that stubbed the metadata would test
 Every diagnostic has a case that fires it and, where the rule has an off switch or a scope, a case proving it
 stays silent. A rule with only a positive case passes when it fires on everything.
 
-The call sites `README.md` and `docs/` show are compiled by `DocumentedExamplesTests`, through generator and
-C# compiler both — a rename reaches code and leaves prose reading exactly as it did, so an example that stops
-compiling has to fail here. An example added to the documentation is added there too.
+`DocumentedExamplesTests` compiles the call sites `README.md` and `docs/` show, **read out of the markdown**
+rather than copied — a test holding its own copy proves the copy compiles and says nothing about what a
+reader is told. A `csharp` fence is preceded by `<!-- compiles: {fixture} -->` naming the resources it is
+compiled against, or `<!-- illustrative: … -->` where it is generated source rather than a call site. An
+unmarked fence fails, so a new example cannot arrive untested.
 
 ## Code style
 

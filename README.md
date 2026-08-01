@@ -42,6 +42,7 @@ Author the words, keyed lowercase:
 
 Name the member, never the key:
 
+<!-- compiles: strings -->
 ```csharp
 var text = StringsKeys.Catalog(new TextCultures("en-US", "sv-SE"));
 
