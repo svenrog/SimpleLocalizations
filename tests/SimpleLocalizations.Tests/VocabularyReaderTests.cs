@@ -87,6 +87,22 @@ public class VocabularyReaderTests
     }
 
     [Fact]
+    public void A_note_written_with_markup_in_it_reads_as_its_text()
+    {
+        // A resx is XML and a note is prose, so nothing stops one being written with a tag in it. What the
+        // note says is what its text says; the tag is not part of it.
+        var entries = VocabularyReader.Read(Resource(
+            """
+              <data name="alpha.one" xml:space="preserve">
+                <value>One</value>
+                <comment>Names <b>a &amp; b</b>, where a &lt; b.</comment>
+              </data>
+            """))!;
+
+        Assert.Equal("Names a & b, where a < b.", Assert.Single(entries).Comment);
+    }
+
+    [Fact]
     public void A_note_of_nothing_is_no_note()
     {
         var entries = VocabularyReader.Read(Resource(
