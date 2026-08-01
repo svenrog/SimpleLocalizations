@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace SimpleLocalizations.Tests;
@@ -15,6 +14,9 @@ internal static partial class DocumentedCode
 {
     /// <summary>Directories holding build output rather than documentation.</summary>
     private static readonly string[] _ignored = ["bin", "obj", "artifacts", "TestResults", ".git", ".vs"];
+
+    /// <summary>What marks the repository root, being the one file that only sits there.</summary>
+    private const string _solution = "SimpleLocalizations.slnx";
 
     /// <summary>
     /// A fence, with the marker above it if it carries one: <c>&lt;!-- kind: argument --&gt;</c>. The marker
@@ -71,12 +73,28 @@ internal static partial class DocumentedCode
             .OrderBy(file => file, StringComparer.Ordinal);
 
     private static string Relative(string file) =>
-        Path.GetRelativePath(Root(), file).Replace('\\', '/');
+        Path.GetRelativePath(_root, file).Replace('\\', '/');
 
     /// <summary>
-    /// The repository root, from this file's own compile-time path: the documentation is not copied to the
-    /// output directory, and a test that read a copy would be back to proving nothing.
+    /// The repository root, walked up to from the assembly rather than taken from this file's compile-time
+    /// path. The documentation is not copied to the output directory, so a test that read a copy would be
+    /// back to proving nothing — but <c>[CallerFilePath]</c> cannot say where it is either: a release sets
+    /// <c>ContinuousIntegrationBuild</c>, which rewrites source paths to <c>/_/…</c> and names no directory
+    /// on the machine running the test.
     /// </summary>
-    private static string Root([CallerFilePath] string here = "") =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", ".."));
+    private static readonly string _root = Root();
+
+    private static string Root()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, _solution)))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName
+            ?? throw new DirectoryNotFoundException(
+                $"no {_solution} above {AppContext.BaseDirectory}, so the documentation cannot be found");
+    }
 }

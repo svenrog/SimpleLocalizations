@@ -29,8 +29,11 @@ jobs:
       - name: Format check
         run: dotnet format SimpleLocalizations.slnx --verify-no-changes
 
+      # ContinuousIntegrationBuild here as well as in release.yml, because it is not inert: it normalizes
+      # source paths, and a test that reads this repository's own files has to find them without one. A
+      # release is the wrong place to discover that, since the tag is already pushed by then.
       - name: Build
-        run: dotnet build SimpleLocalizations.slnx -c Release --no-restore
+        run: dotnet build SimpleLocalizations.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Test
         run: dotnet test SimpleLocalizations.slnx -c Release --no-build
