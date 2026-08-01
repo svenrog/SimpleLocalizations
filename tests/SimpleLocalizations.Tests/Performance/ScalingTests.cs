@@ -58,7 +58,7 @@ public class ScalingTests
         // The regression this exists for: SL1012 resolved the key type's symbol and enumerated the whole
         // declared set once per authored key. Held to a figure rather than a ratio because doing that is
         // still linear in keys — it was four times steeper at four hundred keys and produced the same ratio.
-        Under(_onePass,"SL1012 over 400 keys", () =>
+        Under(_onePass, "SL1012 over 400 keys", () =>
             AnalyzeOn(_compilation, new VocabularyKeyFamilies(),
                 [("Vocab.resx", Vocabulary(400), Declared("Probe.FiledKey"))]));
     }
@@ -66,7 +66,7 @@ public class ScalingTests
     [Fact]
     public void The_heading_rule_reads_the_vocabulary_once()
     {
-        Under(_onePass,"SL1011 over 400 keys", () =>
+        Under(_onePass, "SL1011 over 400 keys", () =>
             AnalyzeOn(_compilation, new VocabularyHeadings(),
                 [("Vocab.resx", Vocabulary(400), Declared())]));
     }
