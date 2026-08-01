@@ -237,4 +237,37 @@ public class VocabularyGeneratorTests
         Assert.Empty(run.Ids);
         Assert.Equal(["Vocab.g.cs", "Vocab.sv-SE.g.cs"], run.Sources.Keys.Order());
     }
+
+    [Fact]
+    public void Two_resources_sharing_a_file_name_are_emitted_under_their_folders()
+    {
+        // A file name is not unique — `Localization/Strings.resx` beside `Shared/Strings.resx` is an ordinary
+        // layout — and a repeated hint name throws inside the generator, which costs every vocabulary in the
+        // project rather than the colliding pair. The build declares the name; this is what it declares.
+        var run = Generate(
+        [
+            ("A/Strings.resx", Keys("alpha.one"),
+                new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.A", Hint: "A.Strings")),
+            ("B/Strings.resx", Keys("beta.two"),
+                new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.B", Hint: "B.Strings")),
+        ]);
+
+        Assert.Empty(run.Ids);
+        Assert.Equal(["A.Strings.g.cs", "B.Strings.g.cs"], run.Sources.Keys.Order());
+    }
+
+    [Fact]
+    public void A_resource_whose_build_declares_no_hint_falls_back_to_its_path()
+    {
+        // Nothing in a build reaches here without the metadata, but the generator is handed AdditionalFiles
+        // and must not throw on the one input it cannot check.
+        var run = Generate(
+        [
+            ("A/Strings.resx", Keys("alpha.one"), new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.A")),
+            ("B/Strings.resx", Keys("beta.two"), new Declaration("StringsKeys", "Probe.ProbeKey", "Probe.B")),
+        ]);
+
+        Assert.Empty(run.Ids);
+        Assert.Equal(["A.Strings.g.cs", "B.Strings.g.cs"], run.Sources.Keys.Order());
+    }
 }

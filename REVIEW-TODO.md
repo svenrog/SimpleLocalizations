@@ -8,7 +8,7 @@ harness before it was written down.
 
 ## Correctness
 
-- [ ] **1. Two resources sharing a filename crash the generator** — `VocabularyGenerator.HintName` uses the
+- [x] **1. Two resources sharing a filename crash the generator** — `VocabularyGenerator.HintName` uses the
       file name alone, so `Localization/Strings.resx` and `Shared/Strings.resx` both emit `Strings.g.cs`.
       Verified: `CS8785`, and the generator contributes *nothing* — every vocabulary in the project vanishes.
       Fix: include the resource's directory in the hint name.

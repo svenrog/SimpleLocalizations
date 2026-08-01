@@ -59,6 +59,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             return null;
         }
 
+        var hint = VocabularyMetadata.Read(options, file, VocabularyMetadata.Hint);
+
         return new Vocabulary(
             Path.GetFileName(file.Path),
             file.GetText(token)?.ToString() ?? "",
@@ -66,7 +68,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             VocabularyMetadata.Read(options, file, VocabularyMetadata.KeyType),
             VocabularyMetadata.Read(options, file, VocabularyMetadata.Namespace),
             VocabularyMetadata.Read(options, file, VocabularyMetadata.Derived),
-            VocabularyMetadata.Read(options, file, VocabularyMetadata.ResourceName));
+            VocabularyMetadata.Read(options, file, VocabularyMetadata.ResourceName),
+            hint.Length > 0 ? hint : Flatten(file.Path));
     }
 
     private static void Produce(SourceProductionContext production, Vocabulary vocabulary)
@@ -140,7 +143,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         }
 
         production.AddSource(
-            HintName(vocabulary.FileName),
+            vocabulary.Hint + ".g.cs",
             SourceText.From(
                 VocabularyEmitter.Emit(
                     root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName),
@@ -148,12 +151,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// What the generated file is called. Named after the resource file rather than the class it declares: two
-    /// items can carry one <c>VocabularyClass</c> — a glob catching a culture file is the way in — and a
-    /// repeated hint name crashes the generator instead of reporting anything.
+    /// A resource's path as a hint name, for a build that declared none. Named after the file rather than the
+    /// class it declares, because two items can carry one <c>VocabularyClass</c> — a glob catching a culture
+    /// file is the way in — and after the <em>whole</em> path rather than the file name, because two folders
+    /// can carry one file name. A repeated hint name throws inside the generator, which costs every
+    /// vocabulary in the project rather than the colliding pair.
     /// </summary>
-    private static string HintName(string fileName) =>
-        Path.GetFileNameWithoutExtension(fileName) + ".g.cs";
+    private static string Flatten(string path) =>
+        string.Concat(
+            Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path))
+                .Select(character => character is '\\' or '/' or ':' ? '.' : character))
+            .Trim('.');
 
     /// <summary>
     /// The suffixes the read edge appends to another key — a finding's supporting text, a signal's pitch.
@@ -177,7 +185,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
     {
         public Vocabulary(
             string fileName, string resx, string className, string keyType, string @namespace, string derived,
-            string resourceName)
+            string resourceName, string hint)
         {
             FileName = fileName;
             Resx = resx;
@@ -186,6 +194,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             Namespace = @namespace;
             Derived = derived;
             ResourceName = resourceName;
+            Hint = hint;
         }
 
         public string FileName { get; }
@@ -202,14 +211,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
 
         public string ResourceName { get; }
 
+        /// <summary>What the generated file is called, without its extension.</summary>
+        public string Hint { get; }
+
         public bool Equals(Vocabulary other) =>
             FileName == other.FileName && Resx == other.Resx && ClassName == other.ClassName
             && KeyType == other.KeyType && Namespace == other.Namespace && Derived == other.Derived
-            && ResourceName == other.ResourceName;
+            && ResourceName == other.ResourceName && Hint == other.Hint;
 
         public override bool Equals(object? obj) => obj is Vocabulary other && Equals(other);
 
         public override int GetHashCode() =>
-            (FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName).GetHashCode();
+            (FileName, Resx, ClassName, KeyType, Namespace, Derived, ResourceName, Hint).GetHashCode();
     }
 }
