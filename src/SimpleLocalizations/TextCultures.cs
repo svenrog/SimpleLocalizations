@@ -101,8 +101,10 @@ public sealed class TextCultures
         foreach (var preference in preferences ?? [])
         {
             // Strip any RFC 9110 quality value; ordering is the caller's, which is what a parsed
-            // Accept-Language already gives us.
-            var tag = preference.Split(';')[0].Trim();
+            // Accept-Language already gives us. Cut rather than split: this runs per request, and the
+            // common preference carries no quality value to cut at all.
+            var semicolon = preference.IndexOf(';');
+            var tag = (semicolon < 0 ? preference : preference.Substring(0, semicolon)).Trim();
 
             if ((Match(tag) ?? Related(tag)) is { } match)
             {
@@ -121,17 +123,59 @@ public sealed class TextCultures
     public static void Apply(CultureInfo culture) =>
         CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-    private string? Match(string tag) =>
-        Supported.FirstOrDefault(c => string.Equals(c, tag, StringComparison.OrdinalIgnoreCase));
+    /// <summary>
+    /// The supported culture named exactly by <paramref name="tag"/>.
+    /// <para>
+    /// Indexed rather than <c>FirstOrDefault</c>: both of these sit on a request path, and a predicate over
+    /// an <see cref="IReadOnlyList{T}"/> allocates a closure and boxes the enumerator on every call, for a
+    /// list that is almost always shorter than five.
+    /// </para>
+    /// </summary>
+    private string? Match(string tag)
+    {
+        for (var index = 0; index < Supported.Count; index++)
+        {
+            if (string.Equals(Supported[index], tag, StringComparison.OrdinalIgnoreCase))
+            {
+                return Supported[index];
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// The first supported culture sharing <paramref name="tag"/>'s language. First because
     /// <see cref="Supported"/> is neutral-first, which makes the pick the one the application would rather
     /// ship when it holds several of a language.
+    /// <para>
+    /// Compared in place rather than by splitting off the subtags: splitting allocates an array and two
+    /// strings per candidate, and this is asked once per candidate per preference.
+    /// </para>
     /// </summary>
-    private string? Related(string tag) =>
-        Supported.FirstOrDefault(c => string.Equals(Language(c), Language(tag), StringComparison.OrdinalIgnoreCase));
+    private string? Related(string tag)
+    {
+        var length = LanguageLength(tag);
 
-    /// <summary>A tag's language subtag — everything before the first hyphen.</summary>
-    private static string Language(string tag) => tag.Split('-')[0];
+        for (var index = 0; index < Supported.Count; index++)
+        {
+            var candidate = Supported[index];
+
+            if (LanguageLength(candidate) == length
+                && string.Compare(candidate, 0, tag, 0, length, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>How much of a tag is its language subtag — everything before the first hyphen.</summary>
+    private static int LanguageLength(string tag)
+    {
+        var hyphen = tag.IndexOf('-');
+
+        return hyphen < 0 ? tag.Length : hyphen;
+    }
 }
