@@ -19,3 +19,4 @@ SL1012 | SimpleLocalizations | Warning | A key is authored outside the families 
 SL1013 | SimpleLocalizations | Warning | A vocabulary key type is not partial.
 SL1014 | SimpleLocalizations | Warning | A declared family enumerates no members.
 SL1015 | SimpleLocalizations | Warning | A vocabulary key type is nested in a type its body cannot be written into.
+SL1016 | SimpleLocalizations | Warning | Two declared family claims word one prefix.

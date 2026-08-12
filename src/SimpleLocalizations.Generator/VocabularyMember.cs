@@ -5,10 +5,10 @@ internal static class VocabularyMember
 {
     /// <summary>
     /// Members the generated classes carry themselves, which a segment may therefore not be named: a family's
-    /// <c>Prefix</c> and <c>Covers</c>, and the root's <c>ResourceName</c> and <c>Catalog</c>.
+    /// <c>Prefix</c>, <c>Covers</c> and <c>Of</c>, and the root's <c>ResourceName</c> and <c>Catalog</c>.
     /// </summary>
     private static readonly HashSet<string> _reserved =
-        new(StringComparer.Ordinal) { "Prefix", "Covers", "ResourceName", "Catalog" };
+        new(StringComparer.Ordinal) { "Prefix", "Covers", "Of", "ResourceName", "Catalog" };
 
     /// <summary>
     /// A dotted segment as a member name: <c>not-http-only</c> becomes <c>NotHttpOnly</c>.

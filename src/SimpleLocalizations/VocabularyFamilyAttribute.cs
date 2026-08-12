@@ -11,8 +11,13 @@ namespace SimpleLocalizations;
 /// Checked where the set is declared, against the vocabularies that compilation authors — which is where the
 /// words for it belong, since a member added there and a heading added elsewhere is the drift this catches.
 /// </para>
+/// <para>
+/// Repeatable, because one set can be worded under more than one family — a band a score falls in is worded
+/// once per thing scored. Each is a claim of its own, and each gets its own lookup.
+/// </para>
 /// </summary>
-[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Class | AttributeTargets.Struct)]
+[AttributeUsage(
+    AttributeTargets.Enum | AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true)]
 public sealed class VocabularyFamilyAttribute : Attribute
 {
     /// <summary>Declares that every member needs <c>{prefix}.{member-lowercased}</c> authored.</summary>

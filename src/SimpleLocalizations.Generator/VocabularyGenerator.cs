@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using System.Text.RegularExpressions;
@@ -32,12 +33,17 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         RegexOptions.None,
         TimeSpan.FromSeconds(1));
 
+    /// <summary>The metadata name of the attribute a declared set is found by.</summary>
+    private const string _family = "SimpleLocalizations.VocabularyFamilyAttribute";
+
     /// <summary>The pipeline stages, by the names a test asks after.</summary>
     internal static class Stages
     {
         public const string Described = "Described";
 
         public const string Vocabularies = "Vocabularies";
+
+        public const string Sets = "Sets";
     }
 
     /// <inheritdoc />
@@ -53,7 +59,21 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             .Select(static (described, _) => described!.Value)
             .WithTrackingName(Stages.Vocabularies);
 
-        context.RegisterSourceOutput(vocabularies, static (production, vocabulary) => Produce(production, vocabulary));
+        // The one input read out of code rather than out of a resource. Found by attribute rather than by
+        // walking the compilation, so a keystroke in a file declaring no set costs nothing — and a set is
+        // carried as values, so a file that declares one and was edited elsewhere re-emits nothing either.
+        var sets = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                _family,
+                static (node, _) => node is EnumDeclarationSyntax,
+                static (declared, _) => FamilySet.Read(declared))
+            .SelectMany(static (sets, _) => sets)
+            .Collect()
+            .WithTrackingName(Stages.Sets);
+
+        context.RegisterSourceOutput(
+            vocabularies.Combine(sets),
+            static (production, pair) => Produce(production, pair.Left, new VocabularyFamilySets(pair.Right)));
     }
 
     /// <summary>
@@ -84,7 +104,8 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
             hint.Length > 0 ? hint : Flatten(file.Path));
     }
 
-    private static void Produce(SourceProductionContext production, Vocabulary vocabulary)
+    private static void Produce(
+        SourceProductionContext production, Vocabulary vocabulary, VocabularyFamilySets families)
     {
         var file = VocabularyLocations.Of(vocabulary.Path);
 
@@ -166,7 +187,7 @@ public sealed class VocabularyGenerator : IIncrementalGenerator
         production.AddSource(
             vocabulary.Hint + ".g.cs",
             VocabularyEmitter.Emit(
-                root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName));
+                root, vocabulary.Namespace, vocabulary.ClassName, keyTypes, vocabulary.ResourceName, families));
     }
 
     /// <summary>

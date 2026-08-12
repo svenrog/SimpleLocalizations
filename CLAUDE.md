@@ -33,6 +33,12 @@ The key type's body is generated too, from `[VocabularyKey]` on an empty `partia
 rule — a private constructor and one public factory — so a hand-rolled type that grew a public constructor
 would open the vocabulary again with nothing failing.
 
+A `[VocabularyFamily]` enum is the one input the generator reads out of **code**, and the reason it does is
+that the mapping from a member to its key already exists twice otherwise: `SL1011` computes the word to
+demand it, and a consumer computes it again to look one up. `VocabularyKeys.Kebab` is the single spelling
+both go through, and `FamilySet` carries a set through the pipeline as values so a keystroke in the file
+declaring one does not re-emit every vocabulary in the project.
+
 ## The one non-obvious constraint
 
 **Every list-shaped declaration is separated by `|`, never `;`.** Metadata reaches the generator through a

@@ -73,7 +73,7 @@ That is the whole of the simple path.
 | --- | --- |
 | [Typed keys](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/typed-keys.md) | Text that *is* an identity: giving a key its own type, and the set it is filed under. |
 | [Declaring a vocabulary](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/declaring-a-vocabulary.md) | Every `VocabularyResource` setting, what gets generated, and the one non-obvious constraint. |
-| [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) | `SL1001`–`SL1015`: what each refuses, and which to make fatal. |
+| [Diagnostics](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/diagnostics.md) | `SL1001`–`SL1016`: what each refuses, and which to make fatal. |
 | [Scope](https://github.com/svenrog/SimpleLocalizations/blob/master/docs/scope.md) | What this package leaves to you, and why it ships a list formatter. |
 
 ## Icon

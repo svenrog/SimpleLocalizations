@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
+using System.Text;
 
 namespace SimpleLocalizations.Generator;
 
@@ -41,7 +42,8 @@ internal static class VocabularyKeys
     /// value to read and so is spelled by its name.
     /// </para>
     /// <para>
-    /// Lowercased whichever it is, because a key is lowercase wherever it is authored.
+    /// A name is <see cref="Kebab"/>-cased and a value is taken as authored, both lowercased — a key is
+    /// lowercase wherever it is authored.
     /// </para>
     /// <para>
     /// <b>Public</b> whichever it is, too: a set is what it exposes, and a member nothing outside the type
@@ -59,11 +61,9 @@ internal static class VocabularyKeys
                 continue;
             }
 
-            var word = Spelling(member, type);
-
-            if (word is not null)
+            if (Spelling(member, type) is { } word)
             {
-                yield return (member.Name, word.ToLowerInvariant(), member.Locations);
+                yield return (member.Name, word, member.Locations);
             }
         }
     }
@@ -72,16 +72,53 @@ internal static class VocabularyKeys
     private static string? Spelling(ISymbol member, INamedTypeSymbol declaring) =>
         member switch
         {
-            IFieldSymbol { HasConstantValue: true, ConstantValue: string value } when value.Length > 0 => value,
-            IFieldSymbol { HasConstantValue: true } field => field.Name,
+            IFieldSymbol { HasConstantValue: true, ConstantValue: string value } when value.Length > 0 =>
+                value.ToLowerInvariant(),
+            IFieldSymbol { HasConstantValue: true } field => Kebab(field.Name),
             // AssociatedSymbol excludes an auto-property's backing field, which is a static readonly field of
             // the declaring type and would otherwise count its property twice.
             IFieldSymbol { IsStatic: true, IsReadOnly: true, AssociatedSymbol: null } field
-                when Is(field.Type, declaring) => field.Name,
+                when Is(field.Type, declaring) => Kebab(field.Name),
             IPropertySymbol { IsStatic: true, GetMethod: not null } property when Is(property.Type, declaring) =>
-                property.Name,
+                Kebab(property.Name),
             _ => null,
         };
+
+    /// <summary>
+    /// A member name as the key spelling of it: lowercased, with a hyphen where a word begins, so
+    /// <c>NotAFit</c> is <c>not-a-fit</c>.
+    /// <para>
+    /// A run of capitals is <b>not</b> held together — <c>TLS</c> is <c>t-l-s</c>. The two rules disagree on
+    /// exactly one shape, a single-letter word before another (<c>not-a-fit</c> against <c>not-afit</c>), and
+    /// only one of them can be had: a set that spells an acronym as one word declares a constant carrying the
+    /// word it wants, which is what a value is read for.
+    /// </para>
+    /// </summary>
+    private static string Kebab(string name)
+    {
+        var word = new StringBuilder(name.Length + 4);
+
+        foreach (var character in name)
+        {
+            // An underscore separates without contributing, so a hyphen is never doubled and never leads.
+            if (character == '_' || char.IsUpper(character))
+            {
+                if (word.Length > 0 && word[word.Length - 1] != '-')
+                {
+                    word.Append('-');
+                }
+
+                if (character == '_')
+                {
+                    continue;
+                }
+            }
+
+            word.Append(char.ToLowerInvariant(character));
+        }
+
+        return word.ToString().TrimEnd('-');
+    }
 
     /// <summary>
     /// Whether a static member's type makes it one of the set — its own type, or a base of it, which is how a
