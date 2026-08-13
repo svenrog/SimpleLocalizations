@@ -46,6 +46,18 @@ public class DocumentedExamplesTests
                 public readonly partial record struct FindingKey;
             }
             """),
+        ["lookup"] = new(
+            [("SecurityStrings.resx", Keys("category.company", "category.stack", "category.tls"),
+                new Declaration(
+                    "SecurityKeys", "SimpleLocalizations.LocalizationKey", "Probe",
+                    ResourceName: "Probe.SecurityStrings"))],
+            """
+            namespace Probe
+            {
+                [VocabularyFamily("category")]
+                public enum FindingCategories { Tls, Stack, Company }
+            }
+            """),
         // No resource: list patterns are not lowercase and so are not a vocabulary. The marker type stands in
         // for whatever the consumer's assembly happens to hold.
         ["patterns"] = new(

@@ -44,6 +44,46 @@ public class FamilySetShapeTests
     }
 
     [Fact]
+    public void A_member_of_more_than_one_word_is_spelled_with_hyphens()
+    {
+        // A key is kebab wherever it is authored, so the word a member is held to is kebab too. Run together
+        // it demanded 'heading.notafit', which is a spelling nobody authors — so the sets that most need the
+        // rule were the ones that could not carry it.
+        Assert.Empty(Check(
+            """
+            [VocabularyFamily("heading")]
+            public enum Sections { NotAFit, RateLimited }
+            """,
+            "heading.not-a-fit", "heading.rate-limited"));
+    }
+
+    [Fact]
+    public void A_run_of_capitals_is_not_held_together()
+    {
+        // The one shape where hyphenating every capital and folding acronyms disagree, and only one can be
+        // had: 'not-a-fit' costs 'seo' being spelled 's-e-o'. A set that wants the other declares a constant
+        // carrying the word, which is what a value is read for.
+        Assert.Empty(Check(
+            """
+            [VocabularyFamily("heading")]
+            public enum Sections { Seo, SEO2 }
+            """,
+            "heading.seo", "heading.s-e-o2"));
+    }
+
+    [Fact]
+    public void An_underscore_separates_without_spelling_anything()
+    {
+        // It would otherwise reach a key as itself, which SL1001 refuses — a demand no resource can satisfy.
+        Assert.Empty(Check(
+            """
+            [VocabularyFamily("heading")]
+            public enum Sections { Not_Applicable }
+            """,
+            "heading.not-applicable"));
+    }
+
+    [Fact]
     public void A_constant_is_spelled_by_its_value_rather_than_its_name()
     {
         // A value is why it is a constant and not an enum, so the value is the identity.

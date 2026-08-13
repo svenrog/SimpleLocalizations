@@ -34,6 +34,15 @@ public class IncrementalCachingTests
         public readonly partial record struct FindingKey;
         """;
 
+    private const string _family = """
+        using SimpleLocalizations;
+
+        namespace Probe;
+
+        [VocabularyFamily("family0")]
+        public enum Sections { Alpha, Beta }
+        """;
+
     [Theory]
     [InlineData(VocabularyGenerator.Stages.Described)]
     [InlineData(VocabularyGenerator.Stages.Vocabularies)]
@@ -62,6 +71,26 @@ public class IncrementalCachingTests
         Assert.All(
             Reasons(driver, "SourceOutput"),
             reason => Assert.Equal(IncrementalStepRunReason.Cached, reason));
+    }
+
+    [Theory]
+    [InlineData(VocabularyGenerator.Stages.Sets)]
+    [InlineData("SourceOutput")]
+    public void A_declared_set_does_not_re_emit_a_vocabulary_when_an_unrelated_type_changes(string stage)
+    {
+        // The stage that reads code rather than a resource, and so the one that can put a compilation's whole
+        // vocabulary back on the critical path of every keystroke. The file declaring the set is the one
+        // edited: a set carried as anything but values re-reads equal and re-emits anyway.
+        var driver = Tracking(_resources, new VocabularyGenerator());
+
+        driver = driver.RunGenerators(Empty(_family), TestContext.Current.CancellationToken);
+        driver = driver.RunGenerators(
+            Empty(_family + "\n\ninternal sealed class Unrelated { }"), TestContext.Current.CancellationToken);
+
+        Assert.All(
+            Reasons(driver, stage),
+            reason => Assert.Contains(
+                reason, new[] { IncrementalStepRunReason.Cached, IncrementalStepRunReason.Unchanged }));
     }
 
     [Theory]

@@ -15,7 +15,12 @@ internal static class VocabularyEmitter
     /// is known to be emittable — every collision is reported before this runs.
     /// </summary>
     public static SourceText Emit(
-        VocabularyNode root, string @namespace, string className, VocabularyKeyTypes keyTypes, string resourceName)
+        VocabularyNode root,
+        string @namespace,
+        string className,
+        VocabularyKeyTypes keyTypes,
+        string resourceName,
+        VocabularyFamilySets families)
     {
         var source = new StringBuilder();
 
@@ -50,7 +55,7 @@ internal static class VocabularyEmitter
 
         foreach (var child in root.Children)
         {
-            Write(source, child, keyTypes, indents, indent: 1);
+            Write(source, child, keyTypes, families, indents, indent: 1);
         }
 
         source.AppendLine("}");
@@ -99,7 +104,12 @@ internal static class VocabularyEmitter
     }
 
     private static void Write(
-        StringBuilder source, VocabularyNode node, VocabularyKeyTypes keyTypes, string[] indents, int indent)
+        StringBuilder source,
+        VocabularyNode node,
+        VocabularyKeyTypes keyTypes,
+        VocabularyFamilySets families,
+        string[] indents,
+        int indent)
     {
         var pad = indents[indent];
 
@@ -134,13 +144,66 @@ internal static class VocabularyEmitter
         source.Append(pad).AppendLine("        key.StartsWith(Prefix, global::System.StringComparison.Ordinal);");
         source.AppendLine();
 
+        if (families.For(node.Path) is { } set)
+        {
+            Lookup(source, node, set, keyTypes.For(node.Path), pad);
+        }
+
         foreach (var child in node.Children)
         {
-            Write(source, child, keyTypes, indents, indent + 1);
+            Write(source, child, keyTypes, families, indents, indent + 1);
         }
 
         source.Append(pad).AppendLine("}");
         source.AppendLine();
+    }
+
+    /// <summary>
+    /// The lookup from a declared set's member to the key wording it, written into the family the words are
+    /// authored under. A member with no key authored is left out of the switch rather than pointed at a member
+    /// that does not exist — <c>SL1011</c> is what names it, and the arm it would have taken throws.
+    /// </summary>
+    private static void Lookup(
+        StringBuilder source, VocabularyNode node, FamilySet set, string keyType, string pad)
+    {
+        source.Append(pad)
+            .AppendLine("    /// <summary>The key <paramref name=\"member\"/> is worded by.</summary>");
+        source.Append(pad).Append("    ").Append(set.Exposed ? "public" : "internal")
+            .Append(" static global::").Append(keyType).Append(" Of(").Append(set.Type).AppendLine(" member) =>");
+        source.Append(pad).AppendLine("        member switch");
+        source.Append(pad).AppendLine("        {");
+
+        foreach (var member in set.Members)
+        {
+            if (Worded(node, member.Word) is { } worded)
+            {
+                source.Append(pad).Append("            ").Append(set.Type).Append('.').Append(member.Name)
+                    .Append(" => ").Append(worded).AppendLine(",");
+            }
+        }
+
+        source.Append(pad).AppendLine(
+            "            _ => throw new global::System.ArgumentOutOfRangeException(nameof(member)),");
+        source.Append(pad).AppendLine("        };");
+        source.AppendLine();
+    }
+
+    /// <summary>
+    /// The member name <paramref name="word"/> is emitted as under <paramref name="node"/>, or
+    /// <see langword="null"/> where the family holds no key of its own by that word — unauthored, dropped as a
+    /// collision, or a family in its own right, which is a class and not a key.
+    /// </summary>
+    private static string? Worded(VocabularyNode node, string word)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.Segment == word)
+            {
+                return child.Entry is null ? null : VocabularyMember.Name(child.Segment);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -37,8 +37,17 @@ public sealed class VocabularyHeadings : DiagnosticAnalyzer
         isEnabledByDefault: true,
         customTags: WellKnownDiagnosticTags.CompilationEnd);
 
+    private static readonly DiagnosticDescriptor _contested = new(
+        "SL1016",
+        "Two declared families word one prefix",
+        "'{0}' words the family '{2}', which '{1}' already words; one family is one set, and no lookup from a member to its key is generated for a family two claims cover",
+        "SimpleLocalizations",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
+
     private static readonly ImmutableArray<DiagnosticDescriptor> _supported =
-        ImmutableArray.Create(_rule, _empty);
+        ImmutableArray.Create(_rule, _empty, _contested);
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => _supported;
@@ -61,9 +70,23 @@ public sealed class VocabularyHeadings : DiagnosticAnalyzer
         }
 
         var authored = VocabularyKeys.Authored(context.Options, context.CancellationToken);
+        var claimed = new Dictionary<string, INamedTypeSymbol>(StringComparer.Ordinal);
 
         foreach (var (set, prefix) in sets)
         {
+            // Reported against the later claim, and both are still held to the words: a family two claims
+            // cover is two statements about one set of keys, and neither is the one to drop. The attribute
+            // is repeatable, so the later claim may be a second one on the same type.
+            if (claimed.TryGetValue(prefix, out var first))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    _contested, set.Locations.FirstOrDefault(), set.Name, first.Name, prefix));
+            }
+            else
+            {
+                claimed.Add(prefix, set);
+            }
+
             var members = VocabularyKeys.Members(set).ToList();
 
             // A set nothing can enumerate checks nothing and would say nothing, which reads exactly like a

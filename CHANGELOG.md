@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented here.
 
+## 1.1.0
+
+- A `[VocabularyFamily]` enum gets the lookup from a member to the key wording it, generated onto that
+  family: `SecurityKeys.Category.Of(FindingCategories.Tls)`. The words a set owes are already `SL1011`'s
+  subject, so the mapping is one the build knows both ends of — and a consumer writing that switch by hand
+  writes a second copy of how a member is spelled, which nothing checks against the first. Enums only; a
+  member with no key authored takes no arm and throws.
+- `[VocabularyFamily]` is repeatable. One set is often worded more than once — a band a score falls in is
+  worded per thing scored — and only one of those families could previously be held to its words. Each claim
+  demands its own words and gets its own lookup.
+- `SL1016` refuses two claims wording one prefix, which no lookup can be generated for.
+
+### Breaking
+
+- A member's name is spelled the way a key is — lowercase and hyphenated at each word, so `NotAFit` is
+  `not-a-fit` rather than `notafit`. `SL1011` demanded a spelling nobody authors, which meant the sets most
+  in need of the rule were the ones that could not carry it. A run of capitals is not folded (`SEO` is
+  `s-e-o`); a set wanting the other reading declares a constant carrying the word.
+- `Of` joins `Prefix` and `Covers` as a name a family class carries itself, so a key segment spelled that way
+  is emitted as `OfKey`.
+
 ## 1.0.0
 
 - The package ships an icon, and the notice for it: the globe emoji from Google's Noto Emoji, Apache-2.0,

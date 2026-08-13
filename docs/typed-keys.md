@@ -89,12 +89,46 @@ A closed set gets written three ways, so `[VocabularyFamily]` reads all three:
 | A constant | its **value** — a value is why it is a constant and not an enum, so `Https = "http-s"` needs `http-s` |
 | A `static readonly` field or property of the declaring type | its name — the type-safe enum a class reaches for when a member needs behaviour |
 
-Lowercased whichever it is, and **public** whichever it is: a set is what it exposes, so a private or
-internal constant on the same type is an implementation detail rather than a member. Anything else — a helper
-property, an unrelated constant — is not a member either.
+A name is spelled the way a key is: lowercase, hyphenated where a word begins, so `NotAFit` needs
+`not-a-fit`. A run of capitals is not folded — `SEO` is `s-e-o` — and a set that wants the other reading
+declares a constant carrying the word, which is what a value is read for.
+
+**Public** whichever it is, too: a set is what it exposes, so a private or internal constant on the same type
+is an implementation detail rather than a member. Anything else — a helper property, an unrelated constant —
+is not a member either.
 
 `SL1014` refuses a `[VocabularyFamily]` type that enumerates none of these. A set that checks nothing looks
 exactly like a set whose every member is authored.
+
+### From a member to its key
+
+Once a set and its words are declared together, the mapping between them is something the build knows both
+ends of. So it is generated, onto the family the words are authored under:
+
+<!-- compiles: lookup -->
+```csharp
+var heading = catalog.Get(SecurityKeys.Category.Of(FindingCategories.Tls));
+```
+
+Hand-writing that switch writes a second copy of how a member is spelled, and the compiler cannot check it
+against the first: an arm pointing at the wrong member's key compiles and resolves to real words.
+
+The attribute is **repeatable**, because one set is often worded more than once — a band a score falls in is
+worded per thing scored:
+
+<!-- illustrative: one set, one family per thing it grades -->
+```csharp
+[VocabularyFamily("performance.score")]
+[VocabularyFamily("performance.category.seo")]
+public enum ScoreBand { Poor, NeedsImprovement, Good }
+```
+
+Each is a claim of its own: every family's words are demanded, and each gets its own lookup.
+
+Enums only — the lookup is a `switch` over the set, and the other two shapes are values a caller already
+holds the spelling of. A member with **no** key authored takes no arm and throws, rather than pointing at a
+member that does not exist; `SL1011` is what names it. A family two claims cover is generated for neither,
+and `SL1016` says so.
 
 ## Families are optional
 
